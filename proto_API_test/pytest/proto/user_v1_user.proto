@@ -1,0 +1,2045 @@
+syntax = "proto3";
+
+package quickGame;
+option go_package = "api/interface/v1;v1";
+option java_multiple_files = true;
+option java_package = "com.xi.quickgame.bean.proto";
+
+//服务定义
+service interface {
+  //调试 grpcurl -plaintext -d '' localhost:8180 quickGame.interface.Ping
+  rpc Ping(PingReq) returns (PingReply) {}
+
+  //初始化 pb_test
+  rpc AppInit(InitReq) returns (InitReply){}
+
+  //实名认证接口
+  rpc UserIdCardVerify(UserIdCardVerifyReq)  returns (UserIdCardVerifyReply){}
+
+  //游客账号登录
+  rpc UserGuestLogin(UserGuestLoginReq) returns (UserLoginTokenReply){}
+
+  //小米账号绑定
+  rpc UserMiBinding(UserMiBindingReq) returns(UserBindingReply){}
+
+  //游客账号覆盖登录
+  rpc UserGuestOverwrite(UserGuestOverwriteReq)  returns(UserLoginTokenReply){}
+
+  // 用户登录或注册 grpcurl -plaintext -d '{"token":"Go"}' localhost:8180 quickGame.interface.UserMobileLogin
+  rpc UserMobileBinding(UserMobileBindingReq) returns (UserBindingReply) {}
+
+  //绑定账号 请求登录的验证码 grpcurl -plaintext -d '{"mobile":"18612438810"}' localhost:8180 quickGame.interface.UserSmsLogin
+  rpc UserSmsBinding(UserSmsBindingReq) returns (UserSmsBindingReply){}
+
+  //验证 验证码是否有效 返回登录凭证
+  rpc UserSmsBindingAck(UserSmsBindingAckReq)  returns(UserBindingReply){}
+
+  //视频推荐页 grpcurl -plaintext -d '{"page":1}' localhost:8180 quickGame.interface.VideoWallPage
+  rpc VideoWallPage(VideoWallReq) returns (VideoWallReply){}
+
+  //视频点赞 pb_test
+  rpc VideoWallLike (VideoWallLikeReq) returns (ActionReply) {}
+
+  //发现页 grpcurl -plaintext  -d '{"page":"1"}' localhost:8180 quickGame.interface.DiscoverPage
+  rpc DiscoverPage(DiscoverReq) returns (DiscoverReply){}
+
+  //发现页换一换
+  rpc DiscoverPull(DiscoverPullReq) returns (DiscoverReply){}
+
+
+  //游戏库 grpcurl -plaintext  localhost:8180 quickGame.interface.GameCatePage
+  rpc GameCatePage(GameCateReq) returns (GameCateReply){}
+
+  //游戏库推荐页面 1.4.0
+  rpc GameCateDiscover(DiscoverPullReq) returns(GameCateDiscoverReply){}
+
+  //游戏库标签选择游戏 1.4.0
+  rpc GameTagPage(GameTagPageReq) returns (GameTagPageReply){}
+
+  //榜单专题页 grpcurl -plaintext  localhost:8180 quickGame.interface.RankTopicPage
+  rpc RankTopicPage (RankPageReq) returns (RankPageReply) {}
+
+  //游戏详情页 grpcurl -plaintext -d '{"gameId":1}' localhost:8180 quickGame.interface.GameInfoPage
+  rpc GameInfoPage (GameInfoReq) returns (GameInfoReply){}
+
+  //游戏评分提示 v1.4.1
+  rpc GameCommentTip (GameInfoReq)returns (GameCommentTipReply){}
+
+  //游戏预约 v1.4.1
+  rpc GameReserved (GameReservedReq)returns (ActionReply){}
+
+  //玩家游戏预约记录 v1.4.1 当本地未初始化过预约记录时请求
+  rpc GameReservedRecord (EmptyReq) returns (GameReservedRecordReply){}
+
+  //游戏元数据返回
+  rpc GamesMetaData (GamesMetaDataReq) returns (GamesMetaDataReply){}
+
+  //游戏详情页 grpcurl -plaintext -d '{"gameId":1}' localhost:8180 quickGame.interface.GameInfoPage
+  //  rpc GameInfoStreamPage (stream GameInfoReq) returns (stream GameInfoReply){}
+
+  //游戏评论页 grpcurl -plaintext -d '{"gameId":1}' localhost:8180 quickGame.interface.GameCommentPage
+  rpc GameCommentPage(GameCommentReq) returns (GameCommentReply){}
+
+  //游戏评论点赞 pb_test
+  rpc GameCommentLike (GameCommentLikeReq) returns (ActionReply) {}
+
+  //游戏评论发布 pb_test
+  rpc GameCommentPost(GameCommentPostReq) returns (ActionReply) {}
+
+  //游戏文章列表页
+  rpc GameArticlePage(GameArticlePageReq) returns (GameArticlePageReply) {}
+
+  //游戏文章详情页
+  rpc GameArticleInfo(GameArticleInfoReq) returns (GameArticleInfoReply) {}
+
+  //游戏文章是否有用
+  rpc GameArticleUseful(GameArticleUsefulReq) returns (ActionReply) {}
+
+
+  //玩家个人主页 grpcurl -plaintext -d '{"page":1,"uid":9}' localhost:8180 quickGame.interface.PlayerHomePage
+  rpc PlayerHomePage(PlayerHomeReq) returns (PlayerHomeReply) {}
+
+  //玩家主页-游戏列表二级页
+  rpc PlayerHomeGamePage(PlayerHomeGameReq) returns (PlayerHomeGameReply) {}
+
+  //玩家主页-点赞过的专题
+  rpc PlayerHomeSpecialPage(PlayerHomeSpecialPageReq) returns(PlayerHomeSpecialPageReply){}
+
+  //玩家主页-点赞过的视频
+  rpc PlayerHomeVideoPage(PlayerHomeVideoPageReq) returns(PlayerHomeVideoPageReply){}
+
+  //搜索主页
+  //grpcurl -plaintext localhost:8180 quickGame.interface.SearchMainPage
+  rpc SearchMainPage(EmptyReq) returns (SearchMainPageReply){}
+
+  //搜索结果页
+  //grpcurl -plaintext  -d '{"keyword":"aa"}' localhost:8180 quickGame.interface.SearchResultPage
+  rpc SearchResultPage(SearchResultPageReq) returns (SearchResultPageReply) {}
+
+  //1.3.0 内容专题页 grpcurl -plaintext  localhost:8180 quickGame.interface.SpecialPage
+  rpc SpecialPage (SpecialPageReq) returns (SpecialPageReply) {}
+
+  //1.3.0 内容专题详情
+  rpc SpecialInfoPage (SpecialInfoPageReq) returns (SpecialInfoPageReply) {}
+
+  //1.3.0 内容专题点赞 pb_test
+  rpc SpecialInfoLike (SpecialInfoLikeReq) returns (ActionReply) {}
+
+
+  //我的页面 pb_test
+  rpc MyPage(EmptyReq) returns (MyPageReply){}
+
+  //我的资料更新 pb_test
+  rpc MyPagePost(MyPagePostReq) returns(ActionReply){}
+
+  //游戏补足提交 pb_test
+  rpc GameAddPost(GameAddPostReq)  returns (ActionReply){}
+
+  //问题反馈 pb_test
+  rpc FeedBackPost(FeedbackReq) returns (ActionReply){}
+
+  //问题反馈弹框类型的 pb_test
+  rpc FeedBackToastPost(FeedBackToastPostReq) returns (ActionReply){}
+
+
+  //获取上传token 有并发数100限制， 需要缓存到本地 默认15分钟过期
+  rpc GetUploadToken(EmptyReq) returns (UploadTokenReply) {}
+
+  //上传视频接口（保存视频）
+  rpc UploadVideo(UploadVideoReq) returns (ActionReply) {}
+
+  //上传视频的列表
+  rpc UploadVideoList(UploadVideoListReq) returns(UploadVideoListReply) {}
+
+  // 鱼塘  grpcurl -plaintext -d '{"token":"34.cczjcuogv93ce00i4arofn27cxesiiuw"}' localhost:8180 quickGame.interface.FishPondPage
+  rpc FishPondPage(FishPondPageReq) returns (FishPondPageReply){}
+
+  // 鱼塘 领取金币
+  rpc FishPondDrawCoin(EmptyReq) returns (FishPondDrawCoinReply){}
+
+  //鱼塘 做任务
+  rpc FishPondDrawTask(FishPondDrawTaskReq) returns (FishPondDrawTaskReply){}
+
+  //鱼塘商品页面 v1.5.0
+  rpc FishpondGoodsPage(PageReq) returns(FishpondGoodsPageReply){}
+
+  //鱼塘兑换接口 v1.5.0  错误码 101：金币不足， 102：库存不足
+  rpc FishpondGoodsExchange(FishpondGoodsExchangeReq) returns(ActionReply){}
+
+  //鱼塘兑换撤销 v1.5.0
+  rpc FishpondGoodsRollback(FishpondGoodsRollbackReq) returns(ActionReply){}
+
+  //鱼塘兑换记录 v1.5.0
+  rpc FishpondGoodsRecord(PageReq) returns(FishpondGoodsRecordReply){}
+
+
+
+  //标上报
+  //视频播放指标上报
+  rpc MetricsVideoPlay(MetricsVideoPlayReq) returns(ActionReply){}
+  //游戏游玩指标上报
+  rpc MetricsGamePlay(MetricsGamePlayReq) returns(ActionReply){}
+  //用户停留app里时长上报
+  rpc MetricsAppTimer(MetricsAppTimerReq) returns(ActionReply){}
+  //补丁应用指标上报
+  rpc MetricsSandbox(MetricsSandboxReq) returns(ActionReply){}
+
+  //应用兼容性测试
+  rpc ApkCompatibility(ApkCompatibilityReq) returns(ApkCompatibilityReply){}
+
+  //上报兼容性测试数据
+  rpc ApkCompatibilityReport(ApkCompatibilityReportReq) returns(ActionReply){}
+
+  //徽章上报的统计数据 v1.3.1临时用
+  rpc MetricsBadgeAlpha(EmptyReq) returns(EmptyReq){}
+
+
+  //消息通知 v1.5.0
+  rpc Notice(NoticeReq) returns(NoticeReply){}
+
+  //消息删除 v1.5.0
+  rpc NoticeRm(NoticeRmReq) returns(ActionReply){}
+
+  //小米广告配置拉取 v1.5.2
+  rpc MiAd (MiAdReq) returns(MiAdReply){}
+
+  //小米广告打点 1.5.2
+  rpc MetricsMiAd(MetricsMiAdReq) returns(ActionReply){}
+
+  //deeplink的归因保存
+  rpc DeeplinkCursor (DeeplinkCursorReq) returns (ActionReply){}
+
+  //春节任务活动
+  rpc Task22014Tmp(EmptyReq) returns(Task22014TmpReply){}
+  rpc Task22014TmpPost(Task22014TmpPostReq) returns(FishPondDrawTaskReply){}
+
+
+  //订阅长链接
+  rpc Subscribe(EmptyReq) returns (stream SubscribeReply) {}
+
+
+}
+
+//deeplink 上报数据
+message DeeplinkCursorReq {
+  string packageName = 1;
+  uint64 installFinishTime = 2;
+  string referrer = 3;
+  uint64 startDownloadTime = 4;
+}
+
+
+//签到任务 指示器
+message Task22014TmpReply {
+  //签到任务指示器类型
+  enum CoinIndicatorType {
+    UNKNOWN = 0;
+    AVAILABLE = 1; //可领取
+    UNAVAILABLE = 2; //不可领取
+    USED = 3; //已领取
+  }
+
+  message Task {
+    int32 daySeq = 1; //第几日
+    string day = 2; //yyyy-mm-dd
+    int32 ShowCoin = 3; //该日可领取金币数
+    CoinIndicatorType status = 4; //领取状态
+    bool isToday = 5; //是否为今日
+  }
+
+  repeated Task task = 1;
+}
+
+message  Task22014TmpPostReq {
+  int32 daySeq = 1;  //签到序号
+  bool isDouble = 2; //是否翻倍
+}
+
+//小米广告样式
+enum MiAdStyle {
+  AD_UNKNOWN = 0;
+  FULL_SCREEN = 1; //全屏广告
+  HALF_SCREEN = 2; //半屏广告
+  REWARD_VIDEO = 3; //激励广告 -> 下载,打开，feed，不会出现该类型
+  TplA = 4; //带标题A版
+  TplB = 5; //带标题B版
+  TplC = 6; //大图
+  TplD = 7; //组图
+}
+
+//广告打开位置
+enum MiAdSection {
+  UNDEFINED = 0;
+  DOWNLOAD = 1; //下载
+  PLAY = 2; //打开游戏
+  TASK = 3; // 任务 暂时不用
+  FEED = 4; //feed流
+  DETAIL = 5 ; //详情页
+}
+
+message  MiAdReq {
+  MiAdSection section = 1; // 使用场景
+  int32 gameId = 2;  //打开或下载的游戏ID
+}
+
+
+message MiAdReply {
+  MiAdStyle style = 1; //广告样式
+  string unitId = 2; //广告位
+  int32 CD = 3; //冷却时间  单位 秒
+  //不显示广告 unitId 为空
+}
+
+//小米广告统计打点
+message MetricsMiAdReq{
+
+  //上报事件
+  enum Event {
+    UNKNOWN = 0;
+    ERROR = 1; //失败
+    SDK_INIT = 2; //SDK初始化
+    REQUEST = 3; //请求
+    IMPRESSION = 4; //曝光 impression
+    PLAYED = 5; //广告播放完成 获得奖励(激励广告)
+    CLICK = 6; //广告点击
+    CLOSE = 7; //关闭
+    //    REWARD = 8; //获得奖励(激励广告)
+  }
+
+  //错误类型
+  enum Error {
+    UNDEFINED = 0; //未知错误
+    SUCC = 1; //正确返回
+    INIT = 2; //初始化失败
+    LOAD = 3; //加载广告失败
+  }
+  MiAdSection section = 1; //位置
+  MiAdStyle style = 2;     //广告样式
+  Event event = 3;         //事件类型
+  SourceCate source = 4;   //来源
+  string unitId = 5;       //广告位D
+  int32 gameId = 6;        //关联游戏ID 如有
+  int32 taskId = 7;        //关联任务ID 如有
+  Error error = 8;         //错误类型
+  string errorInfo = 9;    //错误原因
+}
+
+
+
+message NoticeRmReq{
+  int32 id = 1; //被删除的消息ID
+  bool clear = 2; // 是否全部删除
+}
+
+message NoticeReq {
+  enum Type{
+    TOTAL = 0;
+    NOTICE = 1;
+  }
+
+  Type type = 1; //1.5.0 固定传1
+  int32 page = 2;
+  int32 pageLimit = 3;
+}
+
+
+message PageReq{
+  int32 page = 1;
+  int32 pageLimit = 2;
+}
+
+
+message FishpondGoodsPageReply{
+
+  message Item {
+    int32 id = 1; //商品id
+    string title = 2; //商品标题
+    string icon = 3; //展示图
+    int32 coin = 4; // 价格 金币
+    int32 stock = 5; //库存
+    string info = 6; //物品简介
+    int32 sales = 7; //销量
+    string tips = 8; //兑换提示
+  }
+  uint32 totalAvailableCoin = 1; //总可用金币数
+  repeated Item items = 2;
+}
+
+//兑换
+message FishpondGoodsExchangeReq{
+  int32 goodsId = 1; //商品名称
+  string input = 2; //玩家输入的内容
+}
+
+//撤销兑换
+message FishpondGoodsRollbackReq {
+  int32 id = 1; //流水号
+}
+
+//兑换记录
+message FishpondGoodsRecordReply{
+
+  enum Status {
+    PENDING = 0; //兑换中
+    SUCC = 1; //已兑换
+    FAIL = 2; //已拒绝
+    ROLLBACK = 3; //撤回
+  }
+  message Item{
+    int32 id = 1; //流水号
+    string tradeNo = 2;
+    Status status = 3; //状态
+    FishpondGoodsPageReply.Item good = 4;
+    string failInfo = 5; //拒绝原因
+  }
+
+  repeated Item item = 1;
+}
+
+message NoticeReply {
+
+  enum Cate {
+    BROADCAST = 0; //广播通知
+    NOTICE = 1; //系统消息通知
+    COMMENT = 2; //评论消息通知 冗余
+  }
+
+  message Item {
+    int32 id = 1;
+    Cate cate = 2;
+    string title = 3;
+    string content = 4;
+    LinkHref link = 5;
+    int32 create = 6;
+  }
+
+  message Offset {
+    int32 broadCastOffset = 1; //广播消息的偏移
+    int32 noticeOffset = 2; //系统消息偏移
+    int32 commentOffset = 3; //评论消息偏移 冗余
+  }
+  Offset offset = 1;
+  repeated Item broadcast = 2;
+  repeated Item notice = 3;
+
+
+}
+
+
+//订阅消息
+message SubscribeReply {
+  int32 messageId = 1; //消息id
+  string body = 2;  //消息正文
+}
+
+message PingReq{}
+message PingReply{
+  int64 Now = 1;
+}
+
+
+message UserIdCardVerifyReq{
+  string name = 1;  //姓名
+  string idNum = 2; //身份证号
+}
+
+message UserIdCardVerifyReply {
+  AccountVerify verify = 1;
+  bool CanPlay = 2; //是否可以玩
+}
+
+
+// *** 公共字段 ***//
+
+//自定义页面跳转
+message LinkHref {
+
+  enum linkTarget {//打开方式
+    UNKNOWN = 0;
+    GAME_DETAIL = 1;//游戏详情 youhaoduo://openpage?page=game_detail&id=1
+    TOPIC = 2; //专题
+    WEB = 3; //网页
+    COMMENT = 4; //评论
+    PROFILE = 5; //用户页
+    FISHPOND = 6; //鱼塘
+    SHORTVIDEO = 7; //短视频
+    SECONDFLOOR = 8; //二楼
+    GAME_START = 9; //打开游戏
+    SPECIAL = 10; //打开专题（href为空打开专题列表页） 1.3.0 增加
+    CATEGORY = 11; //打开分页页面 (href 为具体某个分类的id)
+    TAG_PAGE = 12; //跳转到标签页 1.4.0
+    VERSION_PAGE = 13; //跳转到版本页面 1.5.0
+    EXCHANGE_RECORD = 14; //跳转到兑换记录  1.5.0
+    FISHPOND_GOODS = 15; //跳转到鱼塘商品主页 1.5.2
+  }
+  linkTarget target = 1; //跳转方式
+  string href = 2; //跳转内容
+}
+
+//性别
+enum Gender {//性别
+  GENDER_UNKNOWN = 0;
+  MAN = 1;
+  FEMALE = 2;
+}
+
+// 操作执行结果
+message ActionReply {
+  int32 code = 1; //操作码  100 为 成功，其他为业务失败
+  string detail = 2; //失败原因
+}
+
+
+//空请求
+message EmptyReq {}
+
+
+//游玩模式
+enum PlayMode {
+  NORMAL = 0; //沙盒游玩
+  RESERVED = 1; //预约方式
+  INSTALL = 2; //需要安装到手机
+}
+
+//预约信息
+message Reserved {//只有playMode 为  reserved 才需要
+  int32 num = 1; //预约统计
+  bool isReserved = 2; //是否预约过
+}
+
+
+
+//游戏基本数据数据
+message GameBasic {
+
+  int32 id = 1; //游戏ID
+  string title = 2; //游戏标题
+  string icon = 3 ; //游戏头像
+  string info = 4;
+  string score = 5; //游戏评分 冗余
+  uint32 scoreNum = 6; //评分人数 冗余
+  repeated string tags = 7; //标签 冗余
+  uint32 download = 8 ;//下载次数 冗余
+  string pkg = 9; //游戏包
+  string pkgSize = 10; //包大小
+
+  PlayMode playMode = 11; //游玩模式
+  Reserved reserved = 12; //预约数据
+}
+
+//运营位 搜索词
+message SearchKeyword {
+  string bid = 1; //运营位ID
+  string tag = 2; //搜索词
+}
+
+//运营位 标签
+message SearchTag {
+  int32 id = 1; //运营位ID
+  string tag = 2; //搜索词
+}
+
+
+//玩家基本信息
+message PlayerBasic {
+  uint64 uid = 1;
+  string avatar = 2;
+  string nickname = 3;
+}
+
+//个人信息
+message ProfileBasic {
+  uint64 uid = 1; //玩家UID
+  string nickname = 2; //昵称
+  string signature = 3; //个性签名
+  Gender gender = 4; //性别
+  string background = 5; //背景图
+  string avatar = 6; //头像
+  string ageLevel = 7;//年龄范围
+  repeated int32 userTag = 8; //用户个人标签
+  AccountVerify verify = 9; //实名状态
+}
+// 公共字段结束
+
+
+
+message  UserMiBindingReq {
+  string deviceId = 1;
+  string uid = 2; //小米的UID
+  string session = 3;
+}
+
+
+//游客账号登录注册
+message UserGuestLoginReq {
+  string deviceId = 1;
+}
+
+message  UserGuestOverwriteReq {
+  string Mobile = 1;
+  string OverwriteCode = 2;
+}
+//三网合一绑定手机号
+message UserMobileBindingReq {
+  string token = 1; //运营商token。SDK返回的运营商TOKEN，有效期：移动2分钟、电信10分钟、联通30分钟，一次有效。
+  //  bool overwrite = 2; // [该参数弃用] 手机号重复绑定，会直接返回被绑定的token是否登录由客户端决定
+}
+
+//用户登录响应
+message UserMobileLoginReply {
+  string clientToken = 1; //玩家的登录凭据
+  int64 expireAt = 2; //凭据的过期时间
+  bool isNewUser = 3; //是否为新用户
+}
+
+enum AccountVerify  {
+  UNKNOWN = 0; //未实名
+  VERIFIED = 1; //已实名
+  NON_VERIFY = 2; //未成年
+}
+
+//用户登录响应
+message UserLoginTokenReply {
+  string clientToken = 1; //玩家的登录凭据
+  int64 expireAt = 2; //凭据的过期时间
+  bool isNewUser = 3; //是否为新用户
+  bool isGuestUser = 4; //是否为游客账号
+  string Mobile = 5; //如果重复绑定了报错时会带着这个手机号
+  string OverwriteCode = 6; // 如果需要覆盖登录，需要使用该确认码执行覆盖接口
+  uint64 uid = 7; //补一个uid
+  AccountVerify verify = 8; //实名状态
+  bool CanPlay = 9;// 是否可玩
+}
+
+//短信验证码登录
+message UserSmsBindingReq {
+  string mobile = 1; //手机号
+}
+
+//返回短信验证码序列号
+message UserSmsBindingReply {
+  string seqNumber = 1;
+}
+
+//验证短信验证码是否正确
+message UserSmsBindingAckReq {
+  string mobile = 1; //手机号
+  string seqNumber = 2; //验证序列
+  string smsCode = 3; //验证码
+  bool overwrite = 4; //手机号重复是否覆盖
+}
+
+
+//绑定验证信息
+message  UserBindingReply {
+  ActionReply Action = 1;
+  UserLoginTokenReply Token = 2;
+}
+
+
+
+// ******  内容专题页 ****** //
+message SpecialPageReq {
+  int32 page = 1; //第几页
+  int32 pageLimit = 2; //每页数量，最大100
+}
+
+//专题列表结果
+message  SpecialPageReply {
+  message Items {
+    int32 id = 1 ;// 专题ID
+    string cover = 2; //专题封面
+    bool isLike = 3; //我是否点赞过
+  }
+  repeated Items items = 1; //专题项
+}
+
+
+//专题内容请求
+message SpecialInfoPageReq {
+  int32  id = 1; //专题id
+}
+
+//专题内容结果
+message SpecialInfoPageReply {
+  int32 id = 1;
+  string title = 2; //专题标题
+  string headImg = 3; //头图
+  string bgColor = 4; //背景图
+  string fontColor = 5; //字体颜色
+  string content = 6 ;// 正文
+  repeated GameBasic gameCell = 7; //专题内容的游戏列表
+  bool isLike = 8; //我是否点赞过
+  int32 likeNum = 9; //收藏次数 冗余
+}
+
+message SpecialInfoLikeReq {
+  enum Action {
+    UNKNOWN = 0;
+    INCR = 1; //点赞
+    DECR = 2; //取消点赞
+  }
+
+  int32 specialId = 1; //专题id
+  Action action = 3; //操作
+}
+
+
+// ******  游戏库 ****** //
+
+
+//游戏库请求
+message GameCateReq {
+  enum listSort {//排序方式
+    UNKNOWN = 0;
+    HOT = 1;  //热门
+    NEW = 2; //最新
+    SCORE = 3; //评分
+  }
+
+  listSort sort = 1;
+  int32 page = 2; //第几页
+  int32 pageLimit = 3; //每页数量，最大100
+  int32 cateId = 4; ///分类id
+
+}
+
+//游戏库返回数据
+message GameCateReply {
+  //分类列表项
+  message  CateCell {
+    string name = 1; //分类名称
+    repeated string flag = 2; //分类上显示的标记
+    int32 id = 3; //分类id
+  }
+
+  //游戏banner
+  message BannerCell {
+    string bid = 1; //运营位ID
+    string image = 2; //banner图
+    LinkHref link = 3; //打开方式
+  }
+
+  repeated CateCell gameCate = 1; //分类列表
+  repeated GameBasic gameCell = 2; //游戏库的游戏列表
+  repeated BannerCell bannerCell = 3; //banner列表
+  repeated SearchKeyword search = 4; //搜索词 多个 initReply 已返回 此处冗余显示
+  int32 currentCate = 5; //当前显示的分类id
+}
+
+
+//游戏库的标签页  请求
+message GameTagPageReq {
+  enum listSort {//排序方式
+    UNKNOWN = 0;
+    HOT = 1;  //热门
+    NEW = 2; //最新
+    SCORE = 3; //评分
+  }
+
+  listSort sort = 1;
+  int32 page = 2; //第几页
+  int32 pageLimit = 3; //每页数量，最大100
+  repeated int32 tagId = 4; ///标签id 可传多个值
+}
+
+//游戏库的标签页  响应
+message GameTagPageReply {
+
+  //标签列表
+  message  TagCell {
+    string name = 1; //标签名称
+    int32 id = 2; //标签id
+  }
+
+
+  message TagLabel {
+    string name = 1; //分label的名称
+    repeated TagCell gameCate = 2; //label下的标签列表
+  }
+
+
+  repeated TagLabel tagLabel = 1;
+  repeated GameBasic gameCell = 2; //游戏库的游戏列表
+  repeated GameBasic recommend = 3; //没有标签结果时显示的推荐游戏
+  repeated  int32 currentTag = 4; //当前显示的标签
+  string  currentTagName = 5; //当前标签的名字
+
+}
+
+// ******  初始化 ****** //
+
+message InitReq {
+  string campaignName = 1; //广告分包标识符
+}
+
+//榜单标签
+message RankTag {
+  int32 rankId = 1;
+  int32 top = 2;
+  string rankName = 3;
+}
+
+message InitReply {
+
+  //p1 顶部icon替换图标
+  message TopBar {
+    string icon1 = 1;
+    string icon2 = 2;
+    string icon3 = 3;
+    string icon4 = 4;
+    string Background = 10; //顶栏背景图、图标为后台配置项
+  }
+
+  //版本检测
+  message AppVersion {
+    int32 tid = 1; //升级事件ID
+    bool isNewVersion = 2; //是否有新版本
+    bool isForce = 3; //是否为强更
+    string version = 4; //版本号
+    string pkgSize = 5; //包大小
+    string content = 6; //升级说明
+    string download = 7; //下载地址
+  }
+
+  //玩家标签推荐
+  message CateCell {
+    int32 id = 1; //分类id
+    string name = 2; //分类名称
+    string icon = 3; //分类icon
+  }
+
+  //沙盒版本检测
+  message SandboxVersion {
+    //升级模块
+    enum Mods {
+      M_UNKNOWN = 0;
+      SELF = 1; //沙盒自身
+      R64 = 2; //64位
+    }
+    //升级方向
+    enum Event{
+      E_UNKNOWN = 0;
+      ROLLBACK = 1; //卸载更新
+      UPGRADE = 2; //应用更新
+    }
+    int32 tid = 1; //升级事件ID
+    Event event = 2; //升级方向
+    Mods mods = 3; //升级模块
+    bool isForce = 4; //是否为强更
+    int32 retry = 5; //下载失败重试的次数
+    repeated int32 gameId = 6; //是否为仅某个游戏更新
+    string version = 7; //补丁版本号 -  需要客户端自行判断本地补丁版本号是否需要应用
+    int32 size = 8; //补丁包大小 - 单位字节 可用来检测下载完整性
+    string download = 9; //下载地址
+  }
+
+
+  TopBar topbar = 1; //顶部topbar的自定义效果 只声明消息 不实现
+  repeated SearchKeyword search = 2; //搜索词
+  int32  noticeCounter = 3; //未读消息数
+  AppVersion appVersion = 4; //应用升级检测
+  repeated CateCell cateCell = 5; //玩家首次推荐标签
+  string privacy = 6; //隐私政策
+  string agreement = 7;//用户协议
+  bool miAccount = 8; //是否启用小米加白sdk
+  repeated string abTestLabel = 9; //是否有abtest用例
+  bool miLogin = 10; //是否启用小米联运SDK
+  bool idCard = 11; //是否强制进行实名认证
+  MustPlayToast mustPlayToast = 12; //必玩游戏弹板
+  CustomToast customPlayToast = 13; //自定义弹板
+  SandboxVersion sandboxVersion = 14; //沙盒更新消息
+
+  message  Switch {
+    bool BlackWhiteMode = 1; // 是否为黑白模式
+    bool StopPlayMode = 2; //是否为无娱乐模式
+    string StopPlayNotice = 3; //无娱乐模式公告
+  }
+  Switch switch = 15; // 扩展一些开关
+}
+
+
+//必玩游戏 弹板
+message MustPlayToast {
+  //必玩游戏数据
+  message Game {
+    int32 id = 1; //游戏ID
+    string title = 2; //游戏标题
+    string icon = 3 ; //游戏头像
+    string pkg = 4; //游戏包
+    string pkgSize = 5; //包大小
+    string version = 6; //版本号
+  }
+  int32 id = 1; //弹板ID
+  repeated Game items = 2; //必玩弹板的游戏列表
+}
+
+//自定义 弹板
+message CustomToast {
+  int32 id = 1; //弹板ID
+  string iconBackground = 2; //背景图
+  string buttonBackground = 3; //按钮图
+  LinkHref link = 4; //跳转位置
+}
+
+
+
+
+// ******  发现页 ****** //
+
+
+//位置类型
+enum PositionKind {
+  KIND_UNKNOWN = 0;
+  GAME_SLIDERS = 1; //视频运营位1：游戏轮播类型
+  GAME_VIDEO_CELLS = 2; //视频运营位2：游戏带视频的左侧滑动类型
+  GAME_CARD = 3; //视频运营位3：单个游戏卡片类型
+  GAME_ICON_CELLS = 4; //图标运营位 游戏小图标左侧滑动类型
+  GAME_TOPICS = 5; //榜单运营位：游戏榜单
+  COMMENT_PLAYER_CARD = 6; //评论运营位1：玩家评论运营位
+  COMMENT_GAME_CARD = 7; //评论运营位2：游戏单独评论运营位
+  IMAGE_CARD = 8 ;//图片运营位
+  IMAGE_PORTRAIT_CELLS = 9; //图片运营位2 竖向  1.3.0 增加
+  IMAGE_LANDSCAPE_CELLS = 10; //图片运营位3 横向 1.3.0 增加
+  GAME_DOUBLE_ROW_VERTICAL_CELL = 11; //双列游戏运营位  1.3.0 增加
+  IMAGE_THREE_CELLS = 12; //图片运营位4  双列双行3个  1.4.0 增加
+  IMAGE_DOUBLE_CELLS = 13; // 图片运营位5  一行2个  1.4.0 增加
+  XIAOMI_FEED_AD = 14; //小米feed流广告 1.5.0
+}
+
+
+//发现页 请求数据
+message DiscoverReq {
+  int32 page = 1; //分页
+  int32 pageLimit = 2;
+  int32 pullPage = 3; //下拉分页
+  map<string, int32> pullPages = 4; // 1.3.1 版本用的 多运营位分页数据
+}
+
+
+message  GameCateDiscoverReply  {
+  DiscoverReply discoverReply = 1;
+  //分类列表项
+  message  CateCell {
+    string name = 1; //分类名称
+    repeated string flag = 2; //分类上显示的标记
+    int32 id = 3; //分类id
+  }
+
+  repeated  CateCell cateCell = 2; //分类数据
+}
+//发现页消息回复数据
+message DiscoverReply {
+
+  enum  LinkCategory {
+    NONE = 0; //没有连接
+    MORE = 1; //右侧更多链接
+    INSIDE = 2; // 内容里面显示链接
+    RANDOM = 3; //换一换
+  }
+
+  //主页运营位配置
+  message MainPosition {
+    PositionKind kind = 1; //配置类型
+    string title = 2; // 位置标题 可为空
+    string bid = 3; //运营位ID
+
+
+    //以下对应11种不同的运营位配置，根据不同的kind类型去取对应字段里的数据
+    KindGameSliders kindGamesSliders = 4;
+    KindGameVideoCell kindGameVideoCell = 5;
+    KindGameCard kindGameCard = 6;
+    KindGameIconCell kindGameIconCell = 7;
+    KindGameTopics kindGameTopics = 8;
+    KindCommentPlayerCard kindCommentPlayerCard = 9;
+    KindCommentGameCard kindCommentGameCard = 10;
+    KindImageCard kindImageCard = 11;
+    KindImagePortraitCell  kindImagePortraitCell = 12; //1.3.0 增加
+    KindImageLandscapeCell kindImageLandscapeCell = 13; // 1.3.0 增加
+    KindGameDoubleRowVerticalCell kindGameDoubleRowVerticalCell = 14; //1.3.0 增加
+
+    LinkCategory linkCategory = 15; //运营位链接类型
+
+    KindImageThreeCell  kindImageThreeCell = 16; //1.4.0 增加
+    KindImageDoubleCell kindImageDoubleCell = 17; //1.4.0 增加
+    KindXiaomiFeedAd  xiaomiFeedAd = 18; // 1.5.0 增加
+  }
+
+  repeated MainPosition position = 1; // 运营位数据
+}
+
+//v1.3.1添加 发现的换一换，换某一个运营位的内容
+message DiscoverPullReq {
+  string bid = 1; //运营位的BID
+  int32 page = 2; //运营位要翻到第几页
+}
+
+
+//视频运营位1：轮播
+message KindGameSliders {
+  message Items {
+    int32 id = 1; //游戏id
+    string title = 2;  //游戏标题
+    string icon = 3; //游戏头像
+    string score = 4; //评分
+    string info = 5; //简介
+    string videoUrl = 6; //视频链接
+    string videoAvatar = 7; //视频封面
+    string iconBackground = 8; //图标背景图
+    string pkg = 9; //游戏包
+  }
+  repeated Items items = 1;
+}
+
+//视频运营位2：左侧滑动多个视频
+message KindGameVideoCell {
+
+  message Items {
+    int32 id = 1; //游戏id
+    string title = 2;  //游戏标题
+    string icon = 3; //游戏头像
+    string score = 4; //评分
+    string info = 5; //简介
+    string videoUrl = 6; //视频链接
+    string videoAvatar = 7; //视频封面
+    string pkg = 8; //游戏包
+    PlayMode playMode = 9; //游玩模式
+    Reserved reserved = 10; //预约数据
+  }
+  repeated  Items items = 1;
+  LinkHref link = 2; //更多跳转
+
+
+}
+
+
+//视频运营位3：单个游戏卡片类型 不重复
+message KindGameCard {
+  int32 id = 1; //游戏id
+  string title = 2;  //游戏标题
+  string icon = 3; //游戏头像
+  string score = 4; //评分
+  string info = 5; //简介
+  string videoUrl = 6; //视频链接
+  string videoAvatar = 7; //视频封面
+  string pkg = 8; //开始用的apk地址
+  PlayMode playMode = 9; //游玩模式
+  Reserved reserved = 10; //预约数据
+  RankTag rankTag = 11; //榜单标签
+}
+
+//图标运营位：显示游戏小图标
+message KindGameIconCell {
+
+  message Items {
+    int32 id = 1; //游戏id
+    string title = 2;  //游戏标题
+    string icon = 3; //游戏头像
+    string score = 4; //评分
+    string pkg = 5;
+    PlayMode playMode = 6; //游玩模式
+    Reserved reserved = 7; //预约数据
+  }
+  repeated  Items items = 1;
+  LinkHref link = 2; //更多按钮跳转
+}
+
+//榜单运营位
+//包含运营位名称、更多、榜单名称、榜单背景图、查看完整榜单、游戏排名、游戏（游戏icon、游戏名、游戏描述）
+message KindGameTopics {
+  message Items {
+    int32 topicId = 1; //榜单id
+    string title = 2; //榜单标题
+    string background = 3; //榜单背景图
+    LinkHref link = 4; //跳转位置
+
+    //在发现页的榜单最多录入5个
+    message Game  {
+      int32 rank = 1; //排名
+      int32 id = 2;
+      string icon = 3; //游戏头像
+      string title = 4; //游戏标题
+      string info = 5; //游戏描述
+      string pkg = 6; //开始用的apk地址
+    }
+
+    repeated Game rank = 5; //游戏的排行
+  }
+  repeated  Items items = 1; //榜单的数组
+  LinkHref link = 2; //更多按钮跳转
+
+}
+
+//游戏ID，游戏评分、背景图、用户名、用户头像、游戏名、游戏评论内容、评论详情页ID。
+
+
+//评论1：每个玩家评论不同的游戏
+message KindCommentPlayerCard {
+  message  Items {
+    int32  id = 1; //游戏id
+    string title = 2; //游戏标题
+    string icon = 3 ; //游戏头像 冗余
+    int32 score = 4; //玩家评分
+    string background = 5; //背景图
+    uint32 commentId = 6;
+    string comment = 7; //玩家评论
+    PlayerBasic player = 8; //玩家信息
+  }
+  repeated Items items = 1;
+}
+
+
+//评论2：一个游戏多个评论
+message KindCommentGameCard {
+  int32  id = 1; //游戏id
+  string title = 2; //游戏标题
+  string icon = 3 ; //游戏头像
+  string score = 4; //游戏评分
+
+  message Items {
+    uint32 commentId = 1;
+    string comment = 2; //玩家评论
+    string score = 3; //玩家评分
+    PlayerBasic player = 4; //玩家信息
+  }
+
+  repeated Items items = 5;
+}
+
+//图片运营位，1个
+message KindImageCard{
+  string cover = 1;
+  LinkHref link = 2; //打开方式
+}
+
+//图片运营位2：竖向
+message KindImagePortraitCell {
+  message Items {
+    string cover = 1;
+    LinkHref link = 2; //打开方式
+  }
+  repeated  Items items = 1;
+  LinkHref link = 2; //更多按钮跳转
+  LinkHref cellLink = 3; //内容里的更多按钮跳转
+}
+
+//图片运营位3：横向
+message KindImageLandscapeCell {
+  message Items {
+    string cover = 1;
+    LinkHref link = 2; //打开方式
+  }
+  repeated  Items items = 1;
+  LinkHref link = 2; //更多按钮跳转
+  LinkHref cellLink = 3; //内容里的更多按钮跳转
+}
+
+//双列竖划运营位
+message KindGameDoubleRowVerticalCell {
+  message Items {
+    int32 id = 1; //游戏id
+    string title = 2;  //游戏标题
+    string cover = 3; //封面
+    string icon = 4; //游戏头像
+    string score = 5; //评分
+    string pkg = 6; //游戏包
+  }
+  repeated  Items items = 1;
+  //双列竖划运营位无更多跳转
+}
+
+
+
+//图片运营位4  双列双行3个  1.4.0 增加
+message KindImageThreeCell {
+
+  message Items {
+    string cover = 1;
+    LinkHref link = 2; //打开方式
+  }
+  repeated  Items items = 1;
+  LinkHref link = 2; //更多按钮跳转
+}
+
+
+// 图片运营位5  一行2个  1.4.0 增加
+message KindImageDoubleCell {
+  message Items {
+    string cover = 1;
+    LinkHref link = 2; //打开方式
+  }
+  repeated  Items items = 1;
+  LinkHref link = 2; //更多按钮跳转
+}
+
+//小米feed流广告 1.5.2
+message KindXiaomiFeedAd {
+  MiAdStyle style = 1;
+  string unitId = 2;
+}
+
+
+
+// ******  榜单综合页 ****** //
+
+message RankPageReq {
+  int32 rankId = 1; //榜单ID，不传取第一个
+  int32 page = 2; //分页没用 冗余
+  int32 pageLimit = 3;
+}
+
+//榜单返回分类下的数据
+message RankPageReply {
+
+  //榜单分类
+  message CateCell {
+    int32 rankId = 1;
+    string title = 2;
+  }
+
+  message Items {
+    message Rank {
+      int32 rank = 1; //排名
+      int32 id = 2;
+      string icon = 3; //游戏头像
+      string title = 4; //游戏标题
+      repeated string tags = 5; //游戏标签
+      string info = 6; //游戏描述
+      string score = 7; //游戏评分
+      string pkg = 8; //开始用的apk地址
+      PlayMode playMode = 9; //游玩模式
+      Reserved reserved = 10; //预约数据
+    }
+    int32 id = 1; //榜单ID
+    string bid = 2; //运营位ID
+    string name = 3; //榜单名称
+    repeated Rank rankGame = 4; //榜单列表
+  }
+
+  int32 CurrentCate = 1;
+  repeated CateCell rankCate = 2;
+  Items items = 3;  //榜单数据
+
+}
+
+
+// ******  游戏详情页 ****** //
+message GameInfoReq {
+  int32 gameId = 1; //游戏IDs
+  // 返回基本信息 热评那些的都没有
+  // 用于不渲染完整详情页的情况，比如检查版本，补全从id和pkg直接载入游戏所缺失的metadata
+  bool onlyBasic = 2;
+}
+
+message GameInfoReply {
+  int32  id = 1; //游戏id
+
+  message Base {
+    string title = 1; //游戏标题
+    string icon = 2 ; //游戏头像
+    string score = 3; //游戏评分
+    uint32 scoreNum = 4; //评分人数
+    string videoUrl = 5; //视频链接
+    string videoAvatar = 6; //视频封面
+    repeated string tags = 7; //标签
+    uint32  size = 8; //包大小，单位KB
+    uint32 download = 9 ;//下载次数
+    string pkg = 10; //游戏包
+    string info = 11; //简介
+    string editorInfo = 12; //编辑推荐 p1
+    repeated string cover = 13 ; //游戏图片
+  }
+
+  message Tags{
+    int32 id = 1;
+    string name = 2;
+  }
+
+  message MetaData {
+    string version = 1; //版本号
+    int64 updateTime = 2; //更新时间 unix
+    int32 providerId = 3; //厂商ID
+    string provider = 4; // 厂商名称
+    string lang = 5; //语言
+  }
+
+  //热评显示用户名。用户头像、用户评分、评论内容、评论点赞数
+
+  //视频详情的 热评
+  message HotComment {
+    uint32 commentId = 1; //评论id
+    string comment = 2; //评论内容
+    int32 score = 3;  //玩家评分
+    uint32 likeNum = 4; //点赞数量
+    bool isLike = 5; //我是否点赞过， 未登录始终false
+    PlayerBasic player = 10; //玩家信息
+  }
+
+  //同类游戏
+  message GameCell {
+    int32  id = 1; //游戏id
+    string title = 2; //游戏标题
+    string icon = 3 ; //游戏头像
+    string pkg = 4; //游戏包
+  }
+
+  //我发表的评论: 用于评分页面 首次或二次评论判定
+  message MyComment {
+    uint32 commentId = 1; //评论id
+    int32 score = 2; // 我的评分 0 为没有评过
+    string comment = 3; //我对该游戏发表的评论 没有为空
+  }
+
+
+  //游戏动态
+  message GameNews {
+    message Items {
+      int32 id = 1;
+      string title = 2;
+      string time = 3;
+    }
+    repeated  Items items = 1;
+  }
+
+
+  Base base = 2; //基本信息
+  MetaData meta = 3; //附加元数据
+  repeated HotComment hotComment = 4; //热评
+  repeated GameCell sameGame = 5; //同类游戏 max 10
+  repeated GameCell providerGame = 6; //同厂商其他游戏
+  MyComment myComment = 7; //我发出的评分，未登录未发出均为 空
+  bool articleSwitch = 8; //攻略内容的tab开关
+  PlayMode playMode = 9; //游玩模式
+  Reserved reserved = 10; //预约数据
+  GameNews gameNews = 11; //游戏动态
+  repeated Tags TagList = 12; //新增一个tag列表 v1.4.0
+  RankTag rankTag = 13; //新增榜单标签 v1.5.0
+}
+
+
+//游戏评分提示
+message GameCommentTipReply {
+  int32 playNum = 1; //游戏游玩时长
+  bool IsComment = 2; //是否发布过评论
+  int32 score = 3; //我的评分
+}
+
+message GamesMetaDataReq {
+  repeated int32 GameIds = 1; //游戏列表
+}
+
+message GamesMetaDataReply {
+  message Meta {//版本
+    int32 GameId = 1;
+    string Version = 2;
+    string Pkg = 3;
+    string PkgSize = 4; //包大小
+  }
+  message PlayNum{//游玩
+    int32 GameId = 1;
+    int32 PlayNum = 2; //游玩秒数
+  }
+
+  repeated Meta meta = 2;
+  repeated PlayNum playNum = 3;
+
+}
+
+
+
+// ******  游戏详情页-评论详情 ****** //
+
+message GameCommentReq {
+  int32 gameId = 1; //游戏ID
+  int32 pid = 2; //查看某个评论的回复列表 (p1)
+  int32 page = 3; //页码
+  int32 pageLimit = 4; //每页数量，最大100
+}
+
+//游戏评论详情
+message GameCommentReply {
+
+  message Score {
+    int32 score1 = 1; //1星人数
+    int32 score2 = 2; //2星人数
+    int32 score3 = 3; //3星人数
+    int32 score4 = 4; //4星人数
+    int32 score5 = 5; //5星人数
+    string scoreAvg = 6; //平均得分
+    uint32 scoreNum = 7; //评分人数
+    uint32 CommentNum = 8 ; //评论人数
+  }
+
+  //评论评分页玩家信息
+  message ScorePlayer {
+    uint64 uid = 1;
+    string avatar = 2;
+    string nickname = 3;
+    int32 playTime = 4; //游玩时长 单位秒
+  }
+
+  //玩家评论列表
+  message Comment {
+    uint32 commentId = 1; //评论ID
+    int32 score = 2; //玩家评分
+    string comment = 3; //玩家评论内容
+    uint32 likeNum = 4; //点赞数量
+    bool isLike = 5; //我是否点赞过， 未登录始终false
+    ScorePlayer player = 6; //玩家信息
+    int32 create = 7; //发布时间 unix时间戳
+
+    uint32  pid = 8; //评论父ID (p1)
+    uint64  atUid = 9 ; //at玩家的UID (p1)
+    int32 replyNum = 10; //回复数量 (p1)
+    repeated Comment replyComment = 11; //回复列表 默认值显示3个回复更多回复需要调用回复接口 (p1) 没有递归关系，只支持1级回复，replyNum 为0
+  }
+
+  Score score = 1; //评分细节
+  Comment currentComment = 2; //评论详情
+  repeated Comment comment = 3; //评论回复
+  GameBasic game = 4; //游戏评论的游戏信息
+
+}
+
+//发布游戏评论
+message  GameCommentPostReq {
+  int32 gameId = 1; //游戏ID
+  int32 score = 2; //打分数，不传不打分
+  string comment = 3 ; //评论ID
+  string device = 4; //设备名称小尾巴
+  int32 pageLimit = 5; //评论的分页limit
+}
+
+
+//游戏文章列表页
+message GameArticlePageReq {
+  int32 gameId = 1; //游戏ID
+  int32  page = 2; //页数
+  int32 pageLimit = 3; //分页数量
+}
+
+message  GameArticlePageReply {
+  message Items {
+    int32 id = 1;
+    string title = 2;
+    string cover = 3; //图标
+    int32 usefulNum = 4; //有用次数
+    int32 updateTime = 5; //更新时间 时间戳
+    bool  isLike = 6; //我是否点赞
+  }
+
+  repeated  Items items = 1;
+}
+
+//游戏文章正文
+message GameArticleInfoReq {
+  int32 id = 1; //文章ID
+}
+
+//游戏文章详情页
+message  GameArticleInfoReply {
+  string title = 1;
+  string content = 2;
+}
+
+//文章有用
+message  GameArticleUsefulReq {
+  enum Action {
+    UNKNOWN = 0;
+    INCR = 1; //有用
+    DECR = 2; //取消有用
+  }
+
+  int32 id = 1; //文章ID
+  Action action = 2; //操作
+}
+
+
+//游戏评论点赞
+message GameCommentLikeReq {
+
+  enum Action {
+    UNKNOWN = 0;
+    INCR = 1; //点赞
+    DECR = 2; //取消点赞
+  }
+
+  int32 gameId = 1; //游戏ID
+  uint32 commentId = 2; //需要点赞的评论ID
+  Action action = 3; //操作
+}
+
+//游戏预约
+message GameReservedReq {
+  enum Action {
+    UNKNOWN = 0;
+    INCR = 1; //预约
+    DECR = 2; //取消预约
+  }
+
+  int32 gameId = 1; //游戏ID
+  Action action = 3; //操作
+}
+
+
+
+//游戏预约记录响应
+message GameReservedRecordReply {
+  repeated GameBasic items = 1;
+}
+
+//查看某些游戏的预约状态
+message GameReservedStatusReq{
+  repeated int32 gameId = 1;
+}
+
+
+//视频流点赞
+message VideoWallLikeReq {
+
+  enum Action {
+    UNKNOWN = 0;
+    INCR = 1; //点赞
+    DECR = 2; //取消点赞
+  }
+
+  int32 videoId = 1; //视频ID
+  Action action = 2; //操作
+}
+
+
+//**  视频流 ** //
+
+
+
+
+message VideoWall {
+
+  //视频数据
+  message Video {
+    string info = 1 ; //短视频描述
+    uint32 likeNum = 2; //点赞数量
+    string videoUrl = 6; //视频链接
+    string videoAvatar = 7; //视频封面
+  }
+
+  int32 Id = 1; //短视频ID
+  Video video = 2; //视频信息
+  bool  isLike = 3; //我是否点赞
+  GameBasic game = 4; //关联游戏
+  PlayerBasic player = 5; //玩家信息
+}
+
+//请求字段
+message VideoWallReq {
+  //****其他字段序号保留****
+  int32  page = 14; //页数
+  int32 pageLimit = 15; //分页数量
+}
+
+
+
+message VideoWallReply {
+  repeated VideoWall wall = 1; //列表
+  int32  currentPage = 2; //当前页数，客户端调下一页需要currentPage+1 返回-1表示无更多
+}
+
+
+
+
+//**  玩家个人主页 ** //
+
+message PlayerHomeReq {
+  uint64 uid = 1;
+  int32 page = 2; //该分页用来控制 VideoWallReply 结构体数据数量
+  int32 pageLimit = 3;
+}
+
+message PlayerHomeReply {
+
+  ProfileBasic profile = 1; //玩家个人信息
+  repeated GameBasic game = 2; //个人主页的推荐游戏列表
+  int32 gameNum = 3; //推荐游戏数量
+  //视频列表，此处引用了视频流的数据结构体，因为点击后需要进入一个视频播放列表播放需要支持上下滑动切换，此处类似提前预加载了
+  repeated VideoWall video = 4;
+}
+
+//玩家个人主页-游戏列表二级页
+message PlayerHomeGameReq {
+  uint64 uid = 1;
+  int32 page = 2;
+  int32 pageLimit = 3;
+}
+
+message PlayerHomeGameReply{
+  repeated GameBasic game = 1;  //个人主页的游戏列表项
+}
+
+//玩家个人主页 - 喜欢的专题
+message PlayerHomeSpecialPageReq {
+  uint64 uid = 1;
+  int32 page = 2;
+  int32 pageLimit = 3;
+}
+
+message PlayerHomeSpecialPageReply {
+  message Items {
+    int32 id = 1 ;// 专题ID
+    string cover = 2; //专题封面
+  }
+  repeated Items items = 1; //专题项
+}
+
+
+//玩家个人主页 - 喜欢的短视频
+message PlayerHomeVideoPageReq {
+  uint64 uid = 1;
+  int32 page = 2;
+  int32 pageLimit = 3;
+}
+
+message PlayerHomeVideoPageReply{
+  repeated VideoWall video = 1;
+}
+
+
+//**  搜索主页 ** //
+
+// 搜索榜单运营位 1.3.0 增加
+message SearchRank {
+  string title = 1; //运营位标题
+  repeated string keyword = 2; //榜单关键词， 自己从1写序号即可
+}
+
+message SearchMainPageReply {
+  //热搜游戏
+  repeated SearchKeyword search = 1; //搜索词
+  repeated SearchTag hotTags = 2;   //热搜标签
+  repeated GameBasic game = 3; //热搜游戏
+  SearchRank searchRank = 4; // 搜索榜单运营位
+}
+
+
+
+//**  搜索结果页 ** //
+
+message SearchResultPageReq {
+  string keyword = 1;
+  int32 page = 2;
+  int32 pageLimit = 3;
+}
+
+message SearchResultPageReply {
+  string keyword = 1; //搜索关键词
+  repeated GameBasic game = 2; //搜索的游戏
+  repeated GameBasic recommend = 3; //为您推荐
+  PlayerBasic player = 4; //搜索的玩家  冗余
+}
+
+
+//**  我的页面 ** //
+
+//图标运营位
+message HomeIconCell {
+  message Items {
+    string    icon = 1; //图标
+    string    title = 2; //名称
+    LinkHref  link = 3; //跳转位置
+  }
+  repeated  Items items = 1;
+}
+
+
+message MyPageReply {
+
+  //个人信息
+  message Metrics {
+    int32 playTime = 1; //游戏时长 单位分钟
+    int32 coinNum = 2; //金币数量
+    int32 GameNum = 3; //游戏个数 冗余
+  }
+
+  ProfileBasic profile = 1; //玩家个人信息
+  Metrics metrics = 2; //玩家统计信息
+  repeated string defaultAvatar = 6; //默认头像库
+  HomeIconCell  homeIconCell = 7;//我的页面图标运营位
+}
+
+
+//**  游戏补全页面 ** //
+message GameAddPostReq {
+  enum Source {
+    UNKNOWN = 0;
+    TAPTAP = 1; //taptap
+    GOOGLE = 2; //google
+    APPLESTORE = 3; //apple store
+    PHONESTORE = 4; //phone store
+    QQSTORE = 5; //应用宝
+    OTHER = 6; //其他
+  }
+
+  string title = 1; //*游戏名称
+  Source source = 2; //发现渠道
+  string info = 3; //补充描述
+  string recentGame = 4; //近期常玩
+}
+
+
+
+
+/** 更新个人信息 **/
+message MyPagePostReq {
+  string nickname = 2; //昵称
+  string signature = 3; //个性签名
+  Gender gender = 4; //性别
+  string avatar = 5; //头像地址
+  string ageLevel = 6; //年龄段
+  string background = 7; //背景图
+  repeated int32 userTag = 8 ;//用户选择标签 喜好游戏部分
+}
+
+
+message FeedbackExtra{
+  int32  gameId = 1;//游戏ID
+  string gameVersion = 2;//游戏版本
+  string deviceInfo = 3;//设备信息
+}
+
+/** 问题反馈 **/
+message FeedbackReq {
+  enum FeedType{
+    UNKNOWN = 0;
+    FLASH_CRASH = 1; //闪退
+    ENTER_CRASH = 2; //游戏进不去
+    LOGIN_CRASH = 3; //游戏登录注册问题
+    GAME_NOTFOUND = 4; //找不到游戏
+    ACTIVITY_TASK = 5; //活动任务相关
+    OTHER = 6; //其他问题
+    SANDBOX = 7; //沙盒问题
+  }
+  FeedType feedType = 1; //反馈类型
+  string info = 2; //问题描述
+  string contact = 3; //联系方式
+  FeedbackExtra feedbackExtra = 4;
+}
+
+/** 弹板问题反馈 **/
+message FeedBackToastPostReq {
+  enum FeedType{
+    UNKNOWN = 0;
+    FLASH_CRASH = 1; //游戏闪退
+    GAME_PAUSE = 2; //游戏卡顿
+    GAME_BORING = 3; //不好玩
+    NEED_UPDATE = 4; //需要更新
+    NEED_LOGIN = 5; //需要登陆
+    TOO_MANY_ADS = 6; //广告太多
+    OTHER = 7; //其他问题
+  }
+  repeated FeedType feedType = 1; //反馈类型
+  string info = 2; //问题描述
+  FeedbackExtra feedbackExtra = 3;
+}
+
+//获取上传token
+message UploadTokenReply {
+  string accessKeyId = 1;
+  string accessKeySecret = 2;
+  string securityToken = 3;
+  string Expiration = 4;
+  string endpoint = 5;
+  string bucketName = 6;
+}
+
+
+//视频上传请求
+message UploadVideoReq {
+  string video = 1;
+  string info = 2;
+  int32 game_id = 3;
+}
+
+
+message UploadVideoListReq {
+  enum listSort {
+    UNKNOW = 0;
+    ALL = 1;
+    NORMAL = 2; //正常
+    WAIT = 3; //等待审核
+    ERROR = 4; //审核失败
+  }
+  listSort  sort = 1;
+  int32 page = 2;
+  int32 pageLimit = 3;
+}
+
+//视频列表响应
+message UploadVideoListReply {
+  enum Status {
+    UNKNOW = 0;
+    NORMAL = 1; //正常
+    WAIT = 2; //等待审核
+    ERROR = 3; //审核失败
+  }
+
+  message Items {
+    int32 videoId = 1; // 视频ID
+    string info = 2;
+    int32 gameId = 3;
+    string video = 4;
+    string videoAvatar = 5;
+
+    Status status = 6;
+    string status_info = 7; //失败信息
+    int64 createTime = 8; //上传时间
+  }
+
+  repeated Items items = 1;
+
+}
+
+
+/**     鱼塘页面   **/
+
+message FishPondPageReq{
+  bool onlyTask = 1; //是否只返回任务部分数据
+}
+
+
+message FishPondPageReply {
+  enum FishPondStatus {//鱼塘状态
+    STATUS_UNKNOWN = 0;
+    WORKING = 1; //工作中
+    SLEEPING = 2; //休息
+  }
+
+  enum FishPondTaskModule {
+    TASK_UNKNOWN = 0;
+    START_GAME = 1; //启动游戏 或 玩某一款游戏
+    VIEW_VIDEO = 2; //浏览短视频
+    VIEW_DETAIL = 3; //查看详情页
+    BINDING = 4; //绑定手机号
+    CHECKIN_DAILY = 5; //每日签到任务
+    CHECKIN_COUNTER = 6; //累积签到任务
+    REWARD_VIDEO = 7; //激励视频任务 1.5.2
+  }
+
+  enum FishPondTaskType {
+    TASK_TYPE_UNKNOWN = 0;
+    DAILY = 1; //每日任务
+    LIMIT = 2; //限定任务
+    DURATION = 3; //限时任务
+  }
+
+
+  message FishPond {
+    uint32 totalCoin = 1; //总金币
+    uint32 totalAvailableCoin = 2; //总可用金币数
+
+    int32 level = 3;  //当前鱼塘等级
+    int32 levelupCoin = 4; // 下一级需要的金币数
+    int32 levelupCap = 5; //下一级扩容容量
+    int64 timer = 6; // 鱼塘计时器 unix时间戳，记录了上次领取的时刻，获得的金币为 ((now-timer)/5)  < 380+poolCap。5为5秒获得1金币
+
+    int32 coinOverride = 7; // 每天通过挂机最多领取的总容量倍率
+    int32 poolCap = 8; //鱼塘满载存储1倍容量 ，每日总满载数量为 //380+40*X（level） * CoinOverride
+
+    int32 dayDrawCoin = 9; // 每天已领取的金币数量 //   dayDrawCoin >= (poolCap * CoinOverride) 后鱼塘状态为 休眠
+    int32 dayAvailableCoin = 10; // 当前鱼塘可领取的金币数量 休眠时 该值为0
+    FishPondStatus status = 11; //鱼塘工作状态
+  }
+
+
+  //签到任务指示器类型
+  enum CoinIndicatorType {
+    UNKNOWN = 0;
+    AVAILABLE = 1; //可领取
+    UNAVAILABLE = 2; //不可领取
+    USED = 3; //已领取
+    MISSING = 4; //漏签
+  }
+
+  //签到任务 指示器
+  message CoinIndicator {
+    int32 daySeq = 1; //第几日
+    int32 ShowCoin = 2; //该日可领取金币数 0 表示该日没有奖励,适用于累积签到奖励
+    CoinIndicatorType status = 3; //领取状态 漏签适用于每日签到
+    bool isToday = 4; //是否为今日 // 适用于每日任务
+  }
+
+  message Task {
+    int32 id = 1; //任务ID
+    FishPondTaskModule taskModule = 2; //任务模型
+    FishPondTaskType taskType = 3; //任务形式  每日 还是限定
+    string title = 4; //任务标题
+    string icon = 5; //任务icon
+    string info = 6; //描述
+    int32 limit = 7; // 任务完成要求数
+    int32 current = 8;  //当前达成数
+    int32 gameId = 9; //如果FishPondTaskModule= START_GAME 用
+    int32 coin = 10; //金币数
+    string unitId = 11; //广告位ID FishPondTaskModule= REWARD_VIDEO 用 v1.5.2
+  }
+
+  FishPond fishPond = 1; //鱼塘
+  repeated Task tasks = 2; //任务
+  repeated CoinIndicator checkinDay = 3;//每日签到
+  repeated CoinIndicator checkinCounter = 4;//累积签到签到
+  int32 checkinCounterStep = 5; // 累计签到步骤指示器
+
+
+}
+
+message FishPondDrawCoinReply {
+  FishPondPageReply.FishPond fishpond = 2;  //最新的鱼塘数据
+  bool isLevelup = 3; //是否升级
+  int32 drawCoin = 4; //本次领取的金币数量
+}
+
+//鱼塘做任务
+message FishPondDrawTaskReq {
+  FishPondPageReply.FishPondTaskModule module = 1; //做任务的类型
+  int32 taskId = 2; //做任务的ID 如果是每日签到或累积签到 taskID传签哪一天 1-7代表周一 至周日
+}
+
+message FishPondDrawTaskReply {
+  FishPondPageReply.FishPond fishpond = 2;  //最新的鱼塘数据
+  bool isLevelup = 3; //是否升级
+  int32 drawCoin = 4; //本次领取的金币数量
+}
+
+
+//记录内容包括：，用户ID，短视频ID，对应游戏ID，观看时长，观看时间，是否完播，是否循环。
+message MetricsVideoPlayReq {
+  enum Status {
+    UNKNOWN = 0;
+    VIEW = 1; //展示次数  短视频播放时长大于1秒的次数
+    PLAYED = 2; //完播次数 循环播放 的不累积
+    JUMP = 3;  //通过短视频打开游戏的次数
+  }
+  Status Type = 1; //上报类型
+  int32 videoId = 2;  //视频ID
+  int32 GameId = 3;  //游戏ID
+  int32 playedNum = 4; //播放毫秒
+  bool isLoop = 6; //是否循环播放
+}
+
+message MetricsGamePlayReq {
+  enum Status {
+    UNKNOWN = 0;   // 行为   属性参数
+    DOWNLOAD = 1; //下载 [[gameID]
+    INSTALL = 2; //安装 [gameID]
+    OPEN = 3;  //打开游戏成功，且停留时长大于10秒  [gameID,isFirst]
+    PLAY = 4; //游玩时长上报  [gameID,playNum]
+    DETAIL = 5; //游戏详情页打开 [gameID]
+    CLICK_OPEN = 6; //点击打开游戏按钮立即上报, 不需要停留10秒 [gameID,isFirst,Source]
+    DOWNLOAD_START = 7; //下载开始 [gameID,Source]
+    DOWNLOAD_COMPLETE = 8; //下载完成 [GameId,DownloadNum,DownloadSpeed]
+  }
+
+  Status Type = 1;
+  int32 GameId = 2;
+  int32 PlayNum = 3; //游玩时长 本次，单位秒
+  bool isFirst = 5; //是否首次打开
+  SourceCate Source = 6; //行为来源 [下载开始时,7] [打开游戏时,3] [点击打开游戏时,6]
+  int32 DownloadNum = 7 ; //下载完成耗时单位秒
+  int32 DownloadSpeed = 8 ; //下载平均速度 单位 KB
+  string bid = 9; //来源ID 如专题,榜单
+}
+
+//来源类型
+enum SourceCate {
+  OTHER = 0;   // 其他
+  VIDEO_ONE = 1; //视频运营位1
+  VIDEO_TWO = 2;//视频运营位2
+  VIDEO_THREE = 3; //视频运营位3
+  COMMENT_ONE = 4; //评论运营位1
+  RANK = 5; //榜单运营位
+  IMAGE = 6; //图片运营位
+  ICON = 7 ; //图标运营位
+  VIDEO = 8;//视频
+  SEARCH = 9; //搜索
+  CLASSIFY = 10; //分类
+  SECOND_FLOOR = 11 ;//二楼
+  NEWS = 12; //消息
+  GAME_MANAGE = 13; //游戏管理
+  START_GAME_WINDOW = 14; //下载安装完成询问是否打开游戏弹板
+  RECENTLY_PLAYED = 15; //最近玩过
+  RANK_LIST = 16; //榜单列表页
+  OPERATE_IMAGE_TWO = 17; // 图片竖屏运营位
+  OPERATE_IMAGE_THREE = 18; //图片横屏运营位
+  OPERATE_DOUBLE_ROW = 19; //双排游戏运营位
+  SPECIAL = 20; //专题
+  SEARCH_RANK = 21; //搜索排行
+  MUST_PLAY_TOAST = 22; //必玩游戏
+  CATEGORY_RECOMMEND = 23; //分类推荐运营位
+  TAG_PAGE = 24; //标签页
+
+}
+
+message MetricsSandboxReq {
+  enum Status {
+    UNKNOWN = 0;   // 行为   属性参数
+    APPLY = 1; // 有效补丁触发   [tid] [retry]
+    DOWNLOAD = 2; //有效补丁下载 [tid] [retry]
+    INSTALL = 3; //补丁安装      [tid] [retry]
+    INSTALL_SUCC = 4; //安装成功 [tid] [retry]
+    INSTALL_ERROR = 5; //安装失败 [tid] [retry]
+  }
+
+  Status Type = 1;
+  int32 tid = 2; //补丁事务ID号
+  int32 retry = 3; //尝试次数
+  string error = 9; //失败原因
+
+}
+message MetricsAppTimerReq {
+  int32 LiveNum = 1; //停留时长 单位秒
+}
+
+message ApkCompatibilityReq{
+  int32 CaseId = 1; //测试用例ID
+  bool IsDistributed = 2; //是否分布式获取
+  string Identity = 3; //唯一标识，进程挂掉恢复时可以通过该值找到正在消费的队列（除非IsDistributed为true）
+  string AgentLabel = 4; //脚本标签，报表显示
+  string ServerIP = 5; //网关机器的ip地址，用来下载时启用代理
+}
+
+message ApkCompatibilityReply {
+
+  message GameInfo {
+    int64 id = 1;
+    string title = 2; //游戏标题
+    string icon = 3 ; //游戏头像
+    string pkg = 4; //游戏包下载地址
+    string com = 5; //包名
+  }
+
+  GameInfo Data = 1;//游戏数据
+
+
+  int32 Total = 2; //总个数
+  int32 Incoming = 3; //待测个数
+  int32 Outgoing = 4; //已测个数
+}
+
+
+
+message ApkCompatibilityReportReq {
+
+  ApkCompatibilityReq Conf = 1; //带入参数
+  //行为
+  enum Status {
+    UNKNOWN = 0;   // 行为   属性参数
+    DOWNLOAD = 1; //下载结束 [gameID, IsSuccess, Runtime, DownloadSpeed]
+    INSTALL = 2; //安装结束 [gameID, IsSuccess, Runtime, Error]   ---> 上报该指标后才会删除标记
+    RUNNING = 3;  //运行结束 [gameID, IsSuccess, Runtime, extra]
+  }
+  Status Type = 2;
+  //属性
+  int32 GameId = 3;
+  bool IsSuccess = 4; //操作结论：是否成功
+  string Error = 5; //失败原因
+  int32 Runtime = 6; //运行时长 下载过程代表下载时长，安装过程代表安装时长，运行过程代表运行时长
+  int32 DownloadSpeed = 7; //下载平均速度 (KB)
+  string Extra = 8; // 额外信息
+}
