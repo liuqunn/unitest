@@ -1,15 +1,13 @@
 import random,time
+from fake_useragent import UserAgent
+from selenium import webdriver
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.common.by import By
-from selenium import webdriver
 from comm import *
+from protoMail import ProtoMail
 
-<<<<<<< HEAD
-class Twitch(Comm):
-=======
-class Twitch():
->>>>>>> d8ee942ca406902bc7cb7ca922bfbcdfef3d6cf9
+class Twitch(ProtoMail):
     
     loginButt = "//button[@data-a-target = 'login-button']"
     loginName = "//input[@aria-label = '请输入用户名']"
@@ -19,20 +17,12 @@ class Twitch():
     copyMail = "//i[@class = 'mail icon copyable']"
     StarReg = "//button[@data-a-target = 'signup-button']"
     SignuserName = "//input[@aria-label = '创建一个用户名']"
-<<<<<<< HEAD
-    PassXpath = '//input[@type= "password"]' #1.密码  2.确认密码
-=======
     PassXpath = '//input[@class = "ScInputBase-sc-1wz0osy-0 ScInput-sc-m6vr9t-0 eUmSXX ewQTzt InjectLayout-sc-588ddc-0 hdZgVS tw-input tw-input--password"]' #1.密码  2.确认密码
->>>>>>> d8ee942ca406902bc7cb7ca922bfbcdfef3d6cf9
     InputYear = '//input[@placeholder = "年"]'
     InputMonth = '//input[@aria-label = "请选择您的生日月份"]'
     MonthOpt = '//option[@value="5"]'
     InputDay = '//input[@placeholder = "日"]'
-<<<<<<< HEAD
-    UseMail = '//div[text() = "使用电子邮件"]'
-=======
     UseMail = '//div[@class= "ScCoreButtonLabel-sc-lh1yxp-0 cbUefU"]'
->>>>>>> d8ee942ca406902bc7cb7ca922bfbcdfef3d6cf9
     InputMail = '//input[@aria-label = "输入您的电子邮件地址"]'
     regisbut = "//button[@data-a-target = 'passport-signup-button']"  #完成注册按钮
     InputCode = "//input[@type = 'text']"   #验证码输入 
@@ -49,9 +39,6 @@ class Twitch():
     # focus = (By.XPATH,"//button[@aria-label = '关注']")
     sendMsg = "//textarea[@placeholder = '发送消息']"
     sendButton = "//button[@data-a-target = 'chat-send-button']"
-    
-    def __init__(self,driver:webdriver) -> None:
-        self.driver = driver
         
     def find_ele(self,local):
         time.sleep(round(random.uniform(0,1),1))
@@ -69,7 +56,8 @@ class Twitch():
         WebDriverWait(self.driver,60,0.5).until(EC.visibility_of_element_located((By.XPATH,self.loginPass))).send_keys(passwd)
         WebDriverWait(self.driver,60,0.5).until(EC.visibility_of_element_located((By.XPATH,self.loginComm))).click()
     
-    def twitch_regis(self,twitch_name,passd,outlookmail):
+    def twitch_regis(self,twitch_name,passd,protoMail):
+        # self.driver.get("https://www.twitch.tv/")
         time.sleep(round(random.uniform(0,2),1))
         self.driver.find_element_by_xpath(self.StarReg).click()
         self.driver.find_element_by_xpath(self.SignuserName).send_keys(twitch_name)
@@ -80,27 +68,22 @@ class Twitch():
         self.driver.find_element_by_xpath(self.MonthOpt).click()
         self.driver.find_element_by_xpath(self.InputDay).send_keys(random.randint(1,27))
         self.driver.find_element_by_xpath(self.UseMail).click()
-        self.driver.find_element_by_xpath(self.InputMail).send_keys(outlookmail)
+        self.driver.find_element_by_xpath(self.InputMail).send_keys(protoMail)
         WebDriverWait(self.driver,60).until(EC.element_to_be_clickable((By.XPATH,self.regisbut)))
         time.sleep(round(random.uniform(1,2),1))
         self.driver.find_element_by_xpath(self.regisbut).click()
-<<<<<<< HEAD
-        time.sleep(30)
-=======
->>>>>>> d8ee942ca406902bc7cb7ca922bfbcdfef3d6cf9
-        while True:
-            if self.Twitch_jump_judge(self.InputCode):
-                break
-            else:
-                try:
-                    self.driver.find_element_by_xpath(self.regisbut).click()
-                except:
-                    break
+        
     
     def Input_code(self,VeryCode):
         self.driver.find_element_by_xpath(self.InputCode).send_keys(VeryCode)
     
     #关闭登录完成之后的弹窗    
+    def set_topic(self):  
+        WebDriverWait(self.driver,60).until(EC.visibility_of_element_located((By.XPATH,self.seleTopic)))
+        self.driver.find_element_by_xpath(self.seleTopic).click()
+        time.sleep(round())
+        self.driver.find_element_by_xpath(self.CloseButton).click()
+        
     def select_topic(self):
         WebDriverWait(self.driver,60).until(EC.visibility_of_element_located((By.XPATH,self.seleTopic)))
         self.driver.find_element_by_xpath(self.seleTopic).click()
@@ -111,14 +94,12 @@ class Twitch():
         #HostName主播名字    #fensi  粉丝名字
         self.driver.find_element_by_xpath(self.searchInput).send_keys(HostName)
         self.driver.find_element_by_xpath(self.searchButt).click()
-        self.driver.find_element_by_xpath("//a[@href = '/%s']"%(HostName)).click()
-        time.sleep(5)
+        self.driver.find_element_by_xpath(r"//a[@href = '%s']"%(HostName)).click()
+        time.sleep(2)
         self.find_ele(self.focus).click()
-        ranName = random.sample('1ASDzQyx2wvu3tFGHJsr4Wqpo5EnZXCmKLJ6lkRj7iThg8feYd9MNBVUIOPcba0',random.randint(13,19))
+        ranName = random.sample('1ASDzQyx2wvu3tFGHJsr4Wqpo5EnZXCmKLJ6lkRj7iThg8feYd9MNBVUIOPcba0',random.randint(3,9))
         ranName1 = "".join(ranName)
         self.find_ele(self.sendMsg).send_keys("%s coming"%ranName1)
-        self.find_ele(self.sendMsg).send_keys("%s coming"%ranName1)
-        time.sleep(1)
         self.driver.find_element_by_xpath(self.sendButton).click() 
         
         

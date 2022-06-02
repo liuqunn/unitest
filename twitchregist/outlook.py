@@ -1,21 +1,12 @@
-<<<<<<< HEAD
-from lib2to3.pgen2.driver import Driver
 import re
 import time,random
-import webbrowser
-from comm import Comm
-
-class OutLook(Comm):
-=======
-from selenium import webdriver
-import time,random
-import webbrowser
 from selenium.webdriver.common.by import By
 from comm import *
 import xlrd as xr
+from chromeDriver import chromeDriver
 
-class OutLook():
->>>>>>> d8ee942ca406902bc7cb7ca922bfbcdfef3d6cf9
+
+class OutLook(chromeDriver):
     outUrl = r"https://outlook.live.com/owa/"
     #登录相关
     singIn = "//a[@data-task= 'signin']"
@@ -56,15 +47,6 @@ class OutLook():
     refrash = "//a[@title = '收件箱']"
     mailInfo = "//h1[@class = 'bld']"
     
-<<<<<<< HEAD
-    def __init__(self,driver):
-        self.driver = driver
-        
-=======
-    def __init__(self,obj) -> None:
-        self = obj
-    
->>>>>>> d8ee942ca406902bc7cb7ca922bfbcdfef3d6cf9
     def login(self,mail,pwd):
         self.open_browser(self.outUrl)
         self.driver.find_element_by_xpath(self.singIn).click()
@@ -105,10 +87,6 @@ class OutLook():
         time.sleep(30)
         #保持登录状态
         self.driver.find_element_by_xpath(self.Button).click()
-<<<<<<< HEAD
-        return self.driver
-=======
->>>>>>> d8ee942ca406902bc7cb7ca922bfbcdfef3d6cf9
 
     def msg_code(self):
         try:
@@ -132,13 +110,12 @@ class OutLook():
                     # inbox = self.driver.find_element_by_xpath(self.msgInfo).get_attribute("aria-label")
                     # return  re.search('[0-9]{6}',inbox).group()
                 time.sleep(5)
-                
             
-# if __name__ == "__main__":
-#     outlook = OutLook()
-#     # name1,pwd1 = ran_name_pw()
-#     # Lname,Fname = ran_LName_FName()
-#     # outlook.regis(name1,pwd1,Lname,Fname)
-#     # inboxName = name1 + "@outlook.com"
-#     # save_excel(inboxName,"outlook.xls")
-#     outlook.login(read_excel("outlook.xls"),"Wwiuerhwoejrfoiwej")
+if __name__ == "__main__":
+    outlook = OutLook()
+    # name1,pwd1 = ran_name_pw()
+    # Lname,Fname = ran_LName_FName()
+    # outlook.regis(name1,pwd1,Lname,Fname)
+    # inboxName = name1 + "@outlook.com"
+    # save_excel(inboxName,"outlook.xls")
+    outlook.login(read_excel("outlook.xls"),"Wwiuerhwoejrfoiwej")
