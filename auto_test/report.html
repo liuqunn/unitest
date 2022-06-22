@@ -1,0 +1,1634 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8"/>
+    <title>Test Report</title>
+    <link href="assets/style.css" rel="stylesheet" type="text/css"/></head>
+  <body onLoad="init()">
+    <script>/* This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this file,
+ * You can obtain one at http://mozilla.org/MPL/2.0/. */
+
+
+function toArray(iter) {
+    if (iter === null) {
+        return null;
+    }
+    return Array.prototype.slice.call(iter);
+}
+
+function find(selector, elem) { // eslint-disable-line no-redeclare
+    if (!elem) {
+        elem = document;
+    }
+    return elem.querySelector(selector);
+}
+
+function findAll(selector, elem) {
+    if (!elem) {
+        elem = document;
+    }
+    return toArray(elem.querySelectorAll(selector));
+}
+
+function sortColumn(elem) {
+    toggleSortStates(elem);
+    const colIndex = toArray(elem.parentNode.childNodes).indexOf(elem);
+    let key;
+    if (elem.classList.contains('result')) {
+        key = keyResult;
+    } else if (elem.classList.contains('links')) {
+        key = keyLink;
+    } else {
+        key = keyAlpha;
+    }
+    sortTable(elem, key(colIndex));
+}
+
+function showAllExtras() { // eslint-disable-line no-unused-vars
+    findAll('.col-result').forEach(showExtras);
+}
+
+function hideAllExtras() { // eslint-disable-line no-unused-vars
+    findAll('.col-result').forEach(hideExtras);
+}
+
+function showExtras(colresultElem) {
+    const extras = colresultElem.parentNode.nextElementSibling;
+    const expandcollapse = colresultElem.firstElementChild;
+    extras.classList.remove('collapsed');
+    expandcollapse.classList.remove('expander');
+    expandcollapse.classList.add('collapser');
+}
+
+function hideExtras(colresultElem) {
+    const extras = colresultElem.parentNode.nextElementSibling;
+    const expandcollapse = colresultElem.firstElementChild;
+    extras.classList.add('collapsed');
+    expandcollapse.classList.remove('collapser');
+    expandcollapse.classList.add('expander');
+}
+
+function showFilters() {
+    const filterItems = document.getElementsByClassName('filter');
+    for (let i = 0; i < filterItems.length; i++)
+        filterItems[i].hidden = false;
+}
+
+function addCollapse() {
+    // Add links for show/hide all
+    const resulttable = find('table#results-table');
+    const showhideall = document.createElement('p');
+    showhideall.innerHTML = '<a href="javascript:showAllExtras()">Show all details</a> / ' +
+                            '<a href="javascript:hideAllExtras()">Hide all details</a>';
+    resulttable.parentElement.insertBefore(showhideall, resulttable);
+
+    // Add show/hide link to each result
+    findAll('.col-result').forEach(function(elem) {
+        const collapsed = getQueryParameter('collapsed') || 'Passed';
+        const extras = elem.parentNode.nextElementSibling;
+        const expandcollapse = document.createElement('span');
+        if (extras.classList.contains('collapsed')) {
+            expandcollapse.classList.add('expander');
+        } else if (collapsed.includes(elem.innerHTML)) {
+            extras.classList.add('collapsed');
+            expandcollapse.classList.add('expander');
+        } else {
+            expandcollapse.classList.add('collapser');
+        }
+        elem.appendChild(expandcollapse);
+
+        elem.addEventListener('click', function(event) {
+            if (event.currentTarget.parentNode.nextElementSibling.classList.contains('collapsed')) {
+                showExtras(event.currentTarget);
+            } else {
+                hideExtras(event.currentTarget);
+            }
+        });
+    });
+}
+
+function getQueryParameter(name) {
+    const match = RegExp('[?&]' + name + '=([^&]*)').exec(window.location.search);
+    return match && decodeURIComponent(match[1].replace(/\+/g, ' '));
+}
+
+function init () { // eslint-disable-line no-unused-vars
+    resetSortHeaders();
+
+    addCollapse();
+
+    showFilters();
+
+    sortColumn(find('.initial-sort'));
+
+    findAll('.sortable').forEach(function(elem) {
+        elem.addEventListener('click',
+            function() {
+                sortColumn(elem);
+            }, false);
+    });
+}
+
+function sortTable(clicked, keyFunc) {
+    const rows = findAll('.results-table-row');
+    const reversed = !clicked.classList.contains('asc');
+    const sortedRows = sort(rows, keyFunc, reversed);
+    /* Whole table is removed here because browsers acts much slower
+     * when appending existing elements.
+     */
+    const thead = document.getElementById('results-table-head');
+    document.getElementById('results-table').remove();
+    const parent = document.createElement('table');
+    parent.id = 'results-table';
+    parent.appendChild(thead);
+    sortedRows.forEach(function(elem) {
+        parent.appendChild(elem);
+    });
+    document.getElementsByTagName('BODY')[0].appendChild(parent);
+}
+
+function sort(items, keyFunc, reversed) {
+    const sortArray = items.map(function(item, i) {
+        return [keyFunc(item), i];
+    });
+
+    sortArray.sort(function(a, b) {
+        const keyA = a[0];
+        const keyB = b[0];
+
+        if (keyA == keyB) return 0;
+
+        if (reversed) {
+            return keyA < keyB ? 1 : -1;
+        } else {
+            return keyA > keyB ? 1 : -1;
+        }
+    });
+
+    return sortArray.map(function(item) {
+        const index = item[1];
+        return items[index];
+    });
+}
+
+function keyAlpha(colIndex) {
+    return function(elem) {
+        return elem.childNodes[1].childNodes[colIndex].firstChild.data.toLowerCase();
+    };
+}
+
+function keyLink(colIndex) {
+    return function(elem) {
+        const dataCell = elem.childNodes[1].childNodes[colIndex].firstChild;
+        return dataCell == null ? '' : dataCell.innerText.toLowerCase();
+    };
+}
+
+function keyResult(colIndex) {
+    return function(elem) {
+        const strings = ['Error', 'Failed', 'Rerun', 'XFailed', 'XPassed',
+            'Skipped', 'Passed'];
+        return strings.indexOf(elem.childNodes[1].childNodes[colIndex].firstChild.data);
+    };
+}
+
+function resetSortHeaders() {
+    findAll('.sort-icon').forEach(function(elem) {
+        elem.parentNode.removeChild(elem);
+    });
+    findAll('.sortable').forEach(function(elem) {
+        const icon = document.createElement('div');
+        icon.className = 'sort-icon';
+        icon.textContent = 'vvv';
+        elem.insertBefore(icon, elem.firstChild);
+        elem.classList.remove('desc', 'active');
+        elem.classList.add('asc', 'inactive');
+    });
+}
+
+function toggleSortStates(elem) {
+    //if active, toggle between asc and desc
+    if (elem.classList.contains('active')) {
+        elem.classList.toggle('asc');
+        elem.classList.toggle('desc');
+    }
+
+    //if inactive, reset all other functions and add ascending active
+    if (elem.classList.contains('inactive')) {
+        resetSortHeaders();
+        elem.classList.remove('inactive');
+        elem.classList.add('active');
+    }
+}
+
+function isAllRowsHidden(value) {
+    return value.hidden == false;
+}
+
+function filterTable(elem) { // eslint-disable-line no-unused-vars
+    const outcomeAtt = 'data-test-result';
+    const outcome = elem.getAttribute(outcomeAtt);
+    const classOutcome = outcome + ' results-table-row';
+    const outcomeRows = document.getElementsByClassName(classOutcome);
+
+    for(let i = 0; i < outcomeRows.length; i++){
+        outcomeRows[i].hidden = !elem.checked;
+    }
+
+    const rows = findAll('.results-table-row').filter(isAllRowsHidden);
+    const allRowsHidden = rows.length == 0 ? true : false;
+    const notFoundMessage = document.getElementById('not-found-message');
+    notFoundMessage.hidden = !allRowsHidden;
+}
+</script>
+    <h1>report.html</h1>
+    <p>Report generated on 28-Apr-2021 at 20:09:18 by <a href="https://pypi.python.org/pypi/pytest-html">pytest-html</a> v3.1.1</p>
+    <h2>Environment</h2>
+    <table id="environment">
+      <tr>
+        <td>JAVA_HOME</td>
+        <td>C:\Program Files\Java\jdk1.8.0_271</td></tr>
+      <tr>
+        <td>Packages</td>
+        <td>{"pluggy": "0.13.1", "py": "1.9.0", "pytest": "6.1.2"}</td></tr>
+      <tr>
+        <td>Platform</td>
+        <td>Windows-10-10.0.18362-SP0</td></tr>
+      <tr>
+        <td>Plugins</td>
+        <td>{"allure-pytest": "2.8.24", "anyio": "2.2.0", "html": "3.1.1", "metadata": "1.11.0"}</td></tr>
+      <tr>
+        <td>Python</td>
+        <td>3.8.5</td></tr></table>
+    <h2>Summary</h2>
+    <p>71 tests ran in 13.23 seconds. </p>
+    <p class="filter" hidden="true">(Un)check the boxes to filter the results.</p><input checked="true" class="filter" data-test-result="passed" hidden="true" name="filter_checkbox" onChange="filterTable(this)" type="checkbox"/><span class="passed">67 passed</span>, <input checked="true" class="filter" data-test-result="skipped" disabled="true" hidden="true" name="filter_checkbox" onChange="filterTable(this)" type="checkbox"/><span class="skipped">0 skipped</span>, <input checked="true" class="filter" data-test-result="failed" hidden="true" name="filter_checkbox" onChange="filterTable(this)" type="checkbox"/><span class="failed">4 failed</span>, <input checked="true" class="filter" data-test-result="error" disabled="true" hidden="true" name="filter_checkbox" onChange="filterTable(this)" type="checkbox"/><span class="error">0 errors</span>, <input checked="true" class="filter" data-test-result="xfailed" disabled="true" hidden="true" name="filter_checkbox" onChange="filterTable(this)" type="checkbox"/><span class="xfailed">0 expected failures</span>, <input checked="true" class="filter" data-test-result="xpassed" disabled="true" hidden="true" name="filter_checkbox" onChange="filterTable(this)" type="checkbox"/><span class="xpassed">0 unexpected passes</span>
+    <h2>Results</h2>
+    <table id="results-table">
+      <thead id="results-table-head">
+        <tr>
+          <th class="sortable result initial-sort" col="result">Result</th>
+          <th class="sortable" col="name">Test</th>
+          <th class="sortable" col="duration">Duration</th>
+          <th class="sortable links" col="links">Links</th></tr>
+        <tr hidden="true" id="not-found-message">
+          <th colspan="4">No results found. Try to check the filters</th></tr></thead>
+      <tbody class="failed results-table-row">
+        <tr>
+          <td class="col-result">Failed</td>
+          <td class="col-name">test_cases/test_audit.py::TestAudit::test_audit_4</td>
+          <td class="col-duration">0.08</td>
+          <td class="col-links"></td></tr>
+        <tr>
+          <td class="extra" colspan="4">
+            <div class="log">self = &lt;test_audit.TestAudit testMethod=test_audit_4&gt;<br/>case = {&#x27;expect_data&#x27;: {&#x27;code&#x27;: 2, &#x27;msg&#x27;: &#x27;数值参数格式不正确&#x27;}, &#x27;id&#x27;: 4, &#x27;method&#x27;: &#x27;patch&#x27;, &#x27;request&#x27;: {&#x27;headers&#x27;: {&#x27;Authorization&#x27;: ...vOERnpDqcgXPg&#x27;, &#x27;X-Lemonban-Media-Type&#x27;: &#x27;lemonban.v2&#x27;}, &#x27;json&#x27;: {&#x27;approved_or_not&#x27;: True, &#x27;loan_id&#x27;: &#x27;2074792&#x27;}}, ...}<br/><br/>    @data(*cases)<br/>    def test_audit(self, case):<br/>&gt;       self.checkout(case)<br/><br/>test_cases\test_audit.py:74: <br/>_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _<br/>test_cases\base_case.py:48: in checkout<br/>    self.assert_json_response()<br/>test_cases\base_case.py:138: in assert_json_response<br/>    raise e<br/>test_cases\base_case.py:132: in assert_json_response<br/>    self.assertEqual(self.case[&#x27;expect_data&#x27;], res)<br/><span class="error">E   AssertionError: {&#x27;code&#x27;: 2, &#x27;msg&#x27;: &#x27;数值参数格式不正确&#x27;} != {&#x27;code&#x27;: 0, &#x27;msg&#x27;: &#x27;OK&#x27;}</span><br/><span class="error">E   - {&#x27;code&#x27;: 2, &#x27;msg&#x27;: &#x27;数值参数格式不正确&#x27;}</span><br/><span class="error">E   ?          ^          ^^^^^^^^^</span><br/><span class="error">E   </span><br/><span class="error">E   + {&#x27;code&#x27;: 0, &#x27;msg&#x27;: &#x27;OK&#x27;}</span><br/><span class="error">E   ?          ^          ^^</span><br/> ------------------------------Captured stderr call------------------------------ <br/>INFO 2021-04-28 20:09:08,721 [fixture.py--&gt;line:96]:创建项目成功
+INFO 2021-04-28 20:09:08,721 [test_audit.py--&gt;line:64]:添加项目成功！
+INFO 2021-04-28 20:09:08,721 [base_case.py--&gt;line:39]:用例【项目id不是整数】开始测试&gt;&gt;&gt;&gt;&gt;&gt;&gt;
+INFO 2021-04-28 20:09:08,751 [base_case.py--&gt;line:118]:用例【项目id不是整数】状态码断言成功！
+ERROR 2021-04-28 20:09:08,751 [base_case.py--&gt;line:134]:用例【项目id不是整数】请求json结果断言失败！
+Traceback (most recent call last):
+  File &quot;D:\project\classes\py38\day32\test_cases\base_case.py&quot;, line 132, in assert_json_response
+    self.assertEqual(self.case[&#x27;expect_data&#x27;], res)
+  File &quot;D:\Program Files\Python38\lib\unittest\case.py&quot;, line 912, in assertEqual
+    assertion_func(first, second, msg=msg)
+  File &quot;D:\Program Files\Python38\lib\unittest\case.py&quot;, line 1211, in assertDictEqual
+    self.fail(self._formatMessage(msg, standardMsg))
+  File &quot;D:\Program Files\Python38\lib\unittest\case.py&quot;, line 753, in fail
+    raise self.failureException(msg)
+AssertionError: {&#x27;code&#x27;: 2, &#x27;msg&#x27;: &#x27;数值参数格式不正确&#x27;} != {&#x27;code&#x27;: 0, &#x27;msg&#x27;: &#x27;OK&#x27;}
+- {&#x27;code&#x27;: 2, &#x27;msg&#x27;: &#x27;数值参数格式不正确&#x27;}
+?          ^          ^^^^^^^^^
+
++ {&#x27;code&#x27;: 0, &#x27;msg&#x27;: &#x27;OK&#x27;}
+?          ^          ^^
+
+DEBUG 2021-04-28 20:09:08,755 [base_case.py--&gt;line:135]:期望数据：{&#x27;code&#x27;: 2, &#x27;msg&#x27;: &#x27;数值参数格式不正确&#x27;}
+DEBUG 2021-04-28 20:09:08,756 [base_case.py--&gt;line:136]:实际结果: {&#x27;code&#x27;: 0, &#x27;msg&#x27;: &#x27;OK&#x27;}
+DEBUG 2021-04-28 20:09:08,756 [base_case.py--&gt;line:137]:响应结果：{&#x27;code&#x27;: 0, &#x27;msg&#x27;: &#x27;OK&#x27;, &#x27;data&#x27;: None, &#x27;copyright&#x27;: &#x27;Copyright 柠檬班 © 2017-2020 湖南省零檬信息技术有限公司 All Rights Reserved&#x27;}
+<br/> -------------------------------Captured log call-------------------------------- <br/>INFO     py38:fixture.py:96 创建项目成功
+INFO     py38:test_audit.py:64 添加项目成功！
+INFO     py38:base_case.py:39 用例【项目id不是整数】开始测试&gt;&gt;&gt;&gt;&gt;&gt;&gt;
+INFO     py38:base_case.py:118 用例【项目id不是整数】状态码断言成功！
+ERROR    py38:base_case.py:134 用例【项目id不是整数】请求json结果断言失败！
+Traceback (most recent call last):
+  File &quot;D:\project\classes\py38\day32\test_cases\base_case.py&quot;, line 132, in assert_json_response
+    self.assertEqual(self.case[&#x27;expect_data&#x27;], res)
+  File &quot;D:\Program Files\Python38\lib\unittest\case.py&quot;, line 912, in assertEqual
+    assertion_func(first, second, msg=msg)
+  File &quot;D:\Program Files\Python38\lib\unittest\case.py&quot;, line 1211, in assertDictEqual
+    self.fail(self._formatMessage(msg, standardMsg))
+  File &quot;D:\Program Files\Python38\lib\unittest\case.py&quot;, line 753, in fail
+    raise self.failureException(msg)
+AssertionError: {&#x27;code&#x27;: 2, &#x27;msg&#x27;: &#x27;数值参数格式不正确&#x27;} != {&#x27;code&#x27;: 0, &#x27;msg&#x27;: &#x27;OK&#x27;}
+- {&#x27;code&#x27;: 2, &#x27;msg&#x27;: &#x27;数值参数格式不正确&#x27;}
+?          ^          ^^^^^^^^^
+
++ {&#x27;code&#x27;: 0, &#x27;msg&#x27;: &#x27;OK&#x27;}
+?          ^          ^^
+
+DEBUG    py38:base_case.py:135 期望数据：{&#x27;code&#x27;: 2, &#x27;msg&#x27;: &#x27;数值参数格式不正确&#x27;}
+DEBUG    py38:base_case.py:136 实际结果: {&#x27;code&#x27;: 0, &#x27;msg&#x27;: &#x27;OK&#x27;}
+DEBUG    py38:base_case.py:137 响应结果：{&#x27;code&#x27;: 0, &#x27;msg&#x27;: &#x27;OK&#x27;, &#x27;data&#x27;: None, &#x27;copyright&#x27;: &#x27;Copyright 柠檬班 © 2017-2020 湖南省零檬信息技术有限公司 All Rights Reserved&#x27;}<br/></div></td></tr></tbody>
+      <tbody class="failed results-table-row">
+        <tr>
+          <td class="col-result">Failed</td>
+          <td class="col-name">test_cases/test_invest.py::TestInvest::test_invest_16</td>
+          <td class="col-duration">0.03</td>
+          <td class="col-links"></td></tr>
+        <tr>
+          <td class="extra" colspan="4">
+            <div class="log">self = &lt;test_invest.TestInvest testMethod=test_invest_16&gt;<br/>case = {&#x27;expect_data&#x27;: {&#x27;code&#x27;: 2, &#x27;msg&#x27;: &#x27;投资金额必须大于100，并且可以被100整除&#x27;}, &#x27;extract&#x27;: None, &#x27;id&#x27;: 16, &#x27;method&#x27;: &#x27;post&#x27;, ...}<br/><br/>    @data(*cases)<br/>    def test_invest(self, case):<br/>&gt;       self.checkout(case)<br/><br/>test_cases\test_invest.py:21: <br/>_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _<br/>test_cases\base_case.py:48: in checkout<br/>    self.assert_json_response()<br/>test_cases\base_case.py:138: in assert_json_response<br/>    raise e<br/>test_cases\base_case.py:132: in assert_json_response<br/>    self.assertEqual(self.case[&#x27;expect_data&#x27;], res)<br/><span class="error">E   AssertionError: {&#x27;code&#x27;: 2, &#x27;msg&#x27;: &#x27;投资金额必须大于100，并且可以被100整除&#x27;} != {&#x27;code&#x27;: 2, &#x27;msg&#x27;: &#x27;充值金额必须大于100，并且可以被100整除&#x27;}</span><br/><span class="error">E   - {&#x27;code&#x27;: 2, &#x27;msg&#x27;: &#x27;投资金额必须大于100，并且可以被100整除&#x27;}</span><br/><span class="error">E   ?                     ^^</span><br/><span class="error">E   </span><br/><span class="error">E   + {&#x27;code&#x27;: 2, &#x27;msg&#x27;: &#x27;充值金额必须大于100，并且可以被100整除&#x27;}</span><br/><span class="error">E   ?                     ^^</span><br/> ------------------------------Captured stderr call------------------------------ <br/>INFO 2021-04-28 20:09:12,192 [base_case.py--&gt;line:39]:用例【投资金额为不能被100整除的数】开始测试&gt;&gt;&gt;&gt;&gt;&gt;&gt;
+INFO 2021-04-28 20:09:12,225 [base_case.py--&gt;line:118]:用例【投资金额为不能被100整除的数】状态码断言成功！
+ERROR 2021-04-28 20:09:12,225 [base_case.py--&gt;line:134]:用例【投资金额为不能被100整除的数】请求json结果断言失败！
+Traceback (most recent call last):
+  File &quot;D:\project\classes\py38\day32\test_cases\base_case.py&quot;, line 132, in assert_json_response
+    self.assertEqual(self.case[&#x27;expect_data&#x27;], res)
+  File &quot;D:\Program Files\Python38\lib\unittest\case.py&quot;, line 912, in assertEqual
+    assertion_func(first, second, msg=msg)
+  File &quot;D:\Program Files\Python38\lib\unittest\case.py&quot;, line 1211, in assertDictEqual
+    self.fail(self._formatMessage(msg, standardMsg))
+  File &quot;D:\Program Files\Python38\lib\unittest\case.py&quot;, line 753, in fail
+    raise self.failureException(msg)
+AssertionError: {&#x27;code&#x27;: 2, &#x27;msg&#x27;: &#x27;投资金额必须大于100，并且可以被100整除&#x27;} != {&#x27;code&#x27;: 2, &#x27;msg&#x27;: &#x27;充值金额必须大于100，并且可以被100整除&#x27;}
+- {&#x27;code&#x27;: 2, &#x27;msg&#x27;: &#x27;投资金额必须大于100，并且可以被100整除&#x27;}
+?                     ^^
+
++ {&#x27;code&#x27;: 2, &#x27;msg&#x27;: &#x27;充值金额必须大于100，并且可以被100整除&#x27;}
+?                     ^^
+
+DEBUG 2021-04-28 20:09:12,226 [base_case.py--&gt;line:135]:期望数据：{&#x27;code&#x27;: 2, &#x27;msg&#x27;: &#x27;投资金额必须大于100，并且可以被100整除&#x27;}
+DEBUG 2021-04-28 20:09:12,226 [base_case.py--&gt;line:136]:实际结果: {&#x27;code&#x27;: 2, &#x27;msg&#x27;: &#x27;充值金额必须大于100，并且可以被100整除&#x27;}
+DEBUG 2021-04-28 20:09:12,226 [base_case.py--&gt;line:137]:响应结果：{&#x27;code&#x27;: 2, &#x27;msg&#x27;: &#x27;充值金额必须大于100，并且可以被100整除&#x27;, &#x27;data&#x27;: None, &#x27;copyright&#x27;: &#x27;Copyright 柠檬班 © 2017-2020 湖南省零檬信息技术有限公司 All Rights Reserved&#x27;}
+<br/> -------------------------------Captured log call-------------------------------- <br/>INFO     py38:base_case.py:39 用例【投资金额为不能被100整除的数】开始测试&gt;&gt;&gt;&gt;&gt;&gt;&gt;
+INFO     py38:base_case.py:118 用例【投资金额为不能被100整除的数】状态码断言成功！
+ERROR    py38:base_case.py:134 用例【投资金额为不能被100整除的数】请求json结果断言失败！
+Traceback (most recent call last):
+  File &quot;D:\project\classes\py38\day32\test_cases\base_case.py&quot;, line 132, in assert_json_response
+    self.assertEqual(self.case[&#x27;expect_data&#x27;], res)
+  File &quot;D:\Program Files\Python38\lib\unittest\case.py&quot;, line 912, in assertEqual
+    assertion_func(first, second, msg=msg)
+  File &quot;D:\Program Files\Python38\lib\unittest\case.py&quot;, line 1211, in assertDictEqual
+    self.fail(self._formatMessage(msg, standardMsg))
+  File &quot;D:\Program Files\Python38\lib\unittest\case.py&quot;, line 753, in fail
+    raise self.failureException(msg)
+AssertionError: {&#x27;code&#x27;: 2, &#x27;msg&#x27;: &#x27;投资金额必须大于100，并且可以被100整除&#x27;} != {&#x27;code&#x27;: 2, &#x27;msg&#x27;: &#x27;充值金额必须大于100，并且可以被100整除&#x27;}
+- {&#x27;code&#x27;: 2, &#x27;msg&#x27;: &#x27;投资金额必须大于100，并且可以被100整除&#x27;}
+?                     ^^
+
++ {&#x27;code&#x27;: 2, &#x27;msg&#x27;: &#x27;充值金额必须大于100，并且可以被100整除&#x27;}
+?                     ^^
+
+DEBUG    py38:base_case.py:135 期望数据：{&#x27;code&#x27;: 2, &#x27;msg&#x27;: &#x27;投资金额必须大于100，并且可以被100整除&#x27;}
+DEBUG    py38:base_case.py:136 实际结果: {&#x27;code&#x27;: 2, &#x27;msg&#x27;: &#x27;充值金额必须大于100，并且可以被100整除&#x27;}
+DEBUG    py38:base_case.py:137 响应结果：{&#x27;code&#x27;: 2, &#x27;msg&#x27;: &#x27;充值金额必须大于100，并且可以被100整除&#x27;, &#x27;data&#x27;: None, &#x27;copyright&#x27;: &#x27;Copyright 柠檬班 © 2017-2020 湖南省零檬信息技术有限公司 All Rights Reserved&#x27;}<br/></div></td></tr></tbody>
+      <tbody class="failed results-table-row">
+        <tr>
+          <td class="col-result">Failed</td>
+          <td class="col-name">test_cases/test_recharge.py::TestRecharge::test_recharge_07</td>
+          <td class="col-duration">0.03</td>
+          <td class="col-links"></td></tr>
+        <tr>
+          <td class="extra" colspan="4">
+            <div class="log">self = &lt;test_recharge.TestRecharge testMethod=test_recharge_07&gt;<br/>case = {&#x27;expect_data&#x27;: {&#x27;code&#x27;: 2, &#x27;msg&#x27;: &#x27;数字格式化异常&#x27;}, &#x27;id&#x27;: 7, &#x27;method&#x27;: &#x27;post&#x27;, &#x27;request&#x27;: {&#x27;headers&#x27;: {&#x27;Authorization&#x27;: &#x27;Be...Evfly8WbxbUDR-vDQA&#x27;, &#x27;X-Lemonban-Media-Type&#x27;: &#x27;lemonban.v2&#x27;}, &#x27;json&#x27;: {&#x27;amount&#x27;: 888, &#x27;member_id&#x27;: &#x27;1000423926&#x27;}}, ...}<br/><br/>    @data(*cases)<br/>    def test_recharge(self, case):<br/>&gt;       self.checkout(case)<br/><br/>test_cases\test_recharge.py:46: <br/>_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _<br/>test_cases\base_case.py:48: in checkout<br/>    self.assert_json_response()<br/>test_cases\base_case.py:138: in assert_json_response<br/>    raise e<br/>test_cases\base_case.py:132: in assert_json_response<br/>    self.assertEqual(self.case[&#x27;expect_data&#x27;], res)<br/><span class="error">E   AssertionError: {&#x27;code&#x27;: 2, &#x27;msg&#x27;: &#x27;数字格式化异常&#x27;} != {&#x27;code&#x27;: 0, &#x27;msg&#x27;: &#x27;OK&#x27;}</span><br/><span class="error">E   - {&#x27;code&#x27;: 2, &#x27;msg&#x27;: &#x27;数字格式化异常&#x27;}</span><br/><span class="error">E   ?          ^          ^^^^^^^</span><br/><span class="error">E   </span><br/><span class="error">E   + {&#x27;code&#x27;: 0, &#x27;msg&#x27;: &#x27;OK&#x27;}</span><br/><span class="error">E   ?          ^          ^^</span><br/> ------------------------------Captured stderr call------------------------------ <br/>INFO 2021-04-28 20:09:16,358 [base_case.py--&gt;line:39]:用例【会员id为字符串】开始测试&gt;&gt;&gt;&gt;&gt;&gt;&gt;
+INFO 2021-04-28 20:09:16,393 [base_case.py--&gt;line:118]:用例【会员id为字符串】状态码断言成功！
+ERROR 2021-04-28 20:09:16,393 [base_case.py--&gt;line:134]:用例【会员id为字符串】请求json结果断言失败！
+Traceback (most recent call last):
+  File &quot;D:\project\classes\py38\day32\test_cases\base_case.py&quot;, line 132, in assert_json_response
+    self.assertEqual(self.case[&#x27;expect_data&#x27;], res)
+  File &quot;D:\Program Files\Python38\lib\unittest\case.py&quot;, line 912, in assertEqual
+    assertion_func(first, second, msg=msg)
+  File &quot;D:\Program Files\Python38\lib\unittest\case.py&quot;, line 1211, in assertDictEqual
+    self.fail(self._formatMessage(msg, standardMsg))
+  File &quot;D:\Program Files\Python38\lib\unittest\case.py&quot;, line 753, in fail
+    raise self.failureException(msg)
+AssertionError: {&#x27;code&#x27;: 2, &#x27;msg&#x27;: &#x27;数字格式化异常&#x27;} != {&#x27;code&#x27;: 0, &#x27;msg&#x27;: &#x27;OK&#x27;}
+- {&#x27;code&#x27;: 2, &#x27;msg&#x27;: &#x27;数字格式化异常&#x27;}
+?          ^          ^^^^^^^
+
++ {&#x27;code&#x27;: 0, &#x27;msg&#x27;: &#x27;OK&#x27;}
+?          ^          ^^
+
+DEBUG 2021-04-28 20:09:16,394 [base_case.py--&gt;line:135]:期望数据：{&#x27;code&#x27;: 2, &#x27;msg&#x27;: &#x27;数字格式化异常&#x27;}
+DEBUG 2021-04-28 20:09:16,394 [base_case.py--&gt;line:136]:实际结果: {&#x27;code&#x27;: 0, &#x27;msg&#x27;: &#x27;OK&#x27;}
+DEBUG 2021-04-28 20:09:16,394 [base_case.py--&gt;line:137]:响应结果：{&#x27;code&#x27;: 0, &#x27;msg&#x27;: &#x27;OK&#x27;, &#x27;data&#x27;: {&#x27;id&#x27;: 1000423926, &#x27;leave_amount&#x27;: 503553.68, &#x27;mobile_phone&#x27;: &#x27;15829266196&#x27;, &#x27;reg_name&#x27;: &#x27;小柠檬&#x27;, &#x27;reg_time&#x27;: &#x27;2021-04-28 20:09:15.0&#x27;, &#x27;type&#x27;: 1}, &#x27;copyright&#x27;: &#x27;Copyright 柠檬班 © 2017-2020 湖南省零檬信息技术有限公司 All Rights Reserved&#x27;}
+<br/> -------------------------------Captured log call-------------------------------- <br/>INFO     py38:base_case.py:39 用例【会员id为字符串】开始测试&gt;&gt;&gt;&gt;&gt;&gt;&gt;
+INFO     py38:base_case.py:118 用例【会员id为字符串】状态码断言成功！
+ERROR    py38:base_case.py:134 用例【会员id为字符串】请求json结果断言失败！
+Traceback (most recent call last):
+  File &quot;D:\project\classes\py38\day32\test_cases\base_case.py&quot;, line 132, in assert_json_response
+    self.assertEqual(self.case[&#x27;expect_data&#x27;], res)
+  File &quot;D:\Program Files\Python38\lib\unittest\case.py&quot;, line 912, in assertEqual
+    assertion_func(first, second, msg=msg)
+  File &quot;D:\Program Files\Python38\lib\unittest\case.py&quot;, line 1211, in assertDictEqual
+    self.fail(self._formatMessage(msg, standardMsg))
+  File &quot;D:\Program Files\Python38\lib\unittest\case.py&quot;, line 753, in fail
+    raise self.failureException(msg)
+AssertionError: {&#x27;code&#x27;: 2, &#x27;msg&#x27;: &#x27;数字格式化异常&#x27;} != {&#x27;code&#x27;: 0, &#x27;msg&#x27;: &#x27;OK&#x27;}
+- {&#x27;code&#x27;: 2, &#x27;msg&#x27;: &#x27;数字格式化异常&#x27;}
+?          ^          ^^^^^^^
+
++ {&#x27;code&#x27;: 0, &#x27;msg&#x27;: &#x27;OK&#x27;}
+?          ^          ^^
+
+DEBUG    py38:base_case.py:135 期望数据：{&#x27;code&#x27;: 2, &#x27;msg&#x27;: &#x27;数字格式化异常&#x27;}
+DEBUG    py38:base_case.py:136 实际结果: {&#x27;code&#x27;: 0, &#x27;msg&#x27;: &#x27;OK&#x27;}
+DEBUG    py38:base_case.py:137 响应结果：{&#x27;code&#x27;: 0, &#x27;msg&#x27;: &#x27;OK&#x27;, &#x27;data&#x27;: {&#x27;id&#x27;: 1000423926, &#x27;leave_amount&#x27;: 503553.68, &#x27;mobile_phone&#x27;: &#x27;15829266196&#x27;, &#x27;reg_name&#x27;: &#x27;小柠檬&#x27;, &#x27;reg_time&#x27;: &#x27;2021-04-28 20:09:15.0&#x27;, &#x27;type&#x27;: 1}, &#x27;copyright&#x27;: &#x27;Copyright 柠檬班 © 2017-2020 湖南省零檬信息技术有限公司 All Rights Reserved&#x27;}<br/></div></td></tr></tbody>
+      <tbody class="failed results-table-row">
+        <tr>
+          <td class="col-result">Failed</td>
+          <td class="col-name">test_cases/test_recharge.py::TestRecharge::test_recharge_09</td>
+          <td class="col-duration">0.03</td>
+          <td class="col-links"></td></tr>
+        <tr>
+          <td class="extra" colspan="4">
+            <div class="log">self = &lt;test_recharge.TestRecharge testMethod=test_recharge_09&gt;<br/>case = {&#x27;expect_data&#x27;: {&#x27;code&#x27;: 2, &#x27;msg&#x27;: &#x27;金额必须大于0并且小于或者等于500000&#x27;}, &#x27;id&#x27;: 9, &#x27;method&#x27;: &#x27;post&#x27;, &#x27;request&#x27;: {&#x27;headers&#x27;: {&#x27;Autho...51tFEvfly8WbxbUDR-vDQA&#x27;, &#x27;X-Lemonban-Media-Type&#x27;: &#x27;lemonban.v2&#x27;}, &#x27;json&#x27;: {&#x27;amount&#x27;: 0, &#x27;member_id&#x27;: 1000423926}}, ...}<br/><br/>    @data(*cases)<br/>    def test_recharge(self, case):<br/>&gt;       self.checkout(case)<br/><br/>test_cases\test_recharge.py:46: <br/>_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _<br/>test_cases\base_case.py:48: in checkout<br/>    self.assert_json_response()<br/>test_cases\base_case.py:138: in assert_json_response<br/>    raise e<br/>test_cases\base_case.py:132: in assert_json_response<br/>    self.assertEqual(self.case[&#x27;expect_data&#x27;], res)<br/><span class="error">E   AssertionError: {&#x27;code&#x27;: 2, &#x27;msg&#x27;: &#x27;金额必须大于0并且小于或者等于500000&#x27;} != {&#x27;code&#x27;: 0, &#x27;msg&#x27;: &#x27;OK&#x27;}</span><br/><span class="error">E   - {&#x27;code&#x27;: 2, &#x27;msg&#x27;: &#x27;金额必须大于0并且小于或者等于500000&#x27;}</span><br/><span class="error">E   + {&#x27;code&#x27;: 0, &#x27;msg&#x27;: &#x27;OK&#x27;}</span><br/> ------------------------------Captured stderr call------------------------------ <br/>INFO 2021-04-28 20:09:16,434 [base_case.py--&gt;line:39]:用例【充值金额为0】开始测试&gt;&gt;&gt;&gt;&gt;&gt;&gt;
+INFO 2021-04-28 20:09:16,469 [base_case.py--&gt;line:118]:用例【充值金额为0】状态码断言成功！
+ERROR 2021-04-28 20:09:16,469 [base_case.py--&gt;line:134]:用例【充值金额为0】请求json结果断言失败！
+Traceback (most recent call last):
+  File &quot;D:\project\classes\py38\day32\test_cases\base_case.py&quot;, line 132, in assert_json_response
+    self.assertEqual(self.case[&#x27;expect_data&#x27;], res)
+  File &quot;D:\Program Files\Python38\lib\unittest\case.py&quot;, line 912, in assertEqual
+    assertion_func(first, second, msg=msg)
+  File &quot;D:\Program Files\Python38\lib\unittest\case.py&quot;, line 1211, in assertDictEqual
+    self.fail(self._formatMessage(msg, standardMsg))
+  File &quot;D:\Program Files\Python38\lib\unittest\case.py&quot;, line 753, in fail
+    raise self.failureException(msg)
+AssertionError: {&#x27;code&#x27;: 2, &#x27;msg&#x27;: &#x27;金额必须大于0并且小于或者等于500000&#x27;} != {&#x27;code&#x27;: 0, &#x27;msg&#x27;: &#x27;OK&#x27;}
+- {&#x27;code&#x27;: 2, &#x27;msg&#x27;: &#x27;金额必须大于0并且小于或者等于500000&#x27;}
++ {&#x27;code&#x27;: 0, &#x27;msg&#x27;: &#x27;OK&#x27;}
+DEBUG 2021-04-28 20:09:16,470 [base_case.py--&gt;line:135]:期望数据：{&#x27;code&#x27;: 2, &#x27;msg&#x27;: &#x27;金额必须大于0并且小于或者等于500000&#x27;}
+DEBUG 2021-04-28 20:09:16,470 [base_case.py--&gt;line:136]:实际结果: {&#x27;code&#x27;: 0, &#x27;msg&#x27;: &#x27;OK&#x27;}
+DEBUG 2021-04-28 20:09:16,470 [base_case.py--&gt;line:137]:响应结果：{&#x27;code&#x27;: 0, &#x27;msg&#x27;: &#x27;OK&#x27;, &#x27;data&#x27;: {&#x27;id&#x27;: 1000423926, &#x27;leave_amount&#x27;: 503553.68, &#x27;mobile_phone&#x27;: &#x27;15829266196&#x27;, &#x27;reg_name&#x27;: &#x27;小柠檬&#x27;, &#x27;reg_time&#x27;: &#x27;2021-04-28 20:09:15.0&#x27;, &#x27;type&#x27;: 1}, &#x27;copyright&#x27;: &#x27;Copyright 柠檬班 © 2017-2020 湖南省零檬信息技术有限公司 All Rights Reserved&#x27;}
+<br/> -------------------------------Captured log call-------------------------------- <br/>INFO     py38:base_case.py:39 用例【充值金额为0】开始测试&gt;&gt;&gt;&gt;&gt;&gt;&gt;
+INFO     py38:base_case.py:118 用例【充值金额为0】状态码断言成功！
+ERROR    py38:base_case.py:134 用例【充值金额为0】请求json结果断言失败！
+Traceback (most recent call last):
+  File &quot;D:\project\classes\py38\day32\test_cases\base_case.py&quot;, line 132, in assert_json_response
+    self.assertEqual(self.case[&#x27;expect_data&#x27;], res)
+  File &quot;D:\Program Files\Python38\lib\unittest\case.py&quot;, line 912, in assertEqual
+    assertion_func(first, second, msg=msg)
+  File &quot;D:\Program Files\Python38\lib\unittest\case.py&quot;, line 1211, in assertDictEqual
+    self.fail(self._formatMessage(msg, standardMsg))
+  File &quot;D:\Program Files\Python38\lib\unittest\case.py&quot;, line 753, in fail
+    raise self.failureException(msg)
+AssertionError: {&#x27;code&#x27;: 2, &#x27;msg&#x27;: &#x27;金额必须大于0并且小于或者等于500000&#x27;} != {&#x27;code&#x27;: 0, &#x27;msg&#x27;: &#x27;OK&#x27;}
+- {&#x27;code&#x27;: 2, &#x27;msg&#x27;: &#x27;金额必须大于0并且小于或者等于500000&#x27;}
++ {&#x27;code&#x27;: 0, &#x27;msg&#x27;: &#x27;OK&#x27;}
+DEBUG    py38:base_case.py:135 期望数据：{&#x27;code&#x27;: 2, &#x27;msg&#x27;: &#x27;金额必须大于0并且小于或者等于500000&#x27;}
+DEBUG    py38:base_case.py:136 实际结果: {&#x27;code&#x27;: 0, &#x27;msg&#x27;: &#x27;OK&#x27;}
+DEBUG    py38:base_case.py:137 响应结果：{&#x27;code&#x27;: 0, &#x27;msg&#x27;: &#x27;OK&#x27;, &#x27;data&#x27;: {&#x27;id&#x27;: 1000423926, &#x27;leave_amount&#x27;: 503553.68, &#x27;mobile_phone&#x27;: &#x27;15829266196&#x27;, &#x27;reg_name&#x27;: &#x27;小柠檬&#x27;, &#x27;reg_time&#x27;: &#x27;2021-04-28 20:09:15.0&#x27;, &#x27;type&#x27;: 1}, &#x27;copyright&#x27;: &#x27;Copyright 柠檬班 © 2017-2020 湖南省零檬信息技术有限公司 All Rights Reserved&#x27;}<br/></div></td></tr></tbody>
+      <tbody class="passed results-table-row">
+        <tr>
+          <td class="col-result">Passed</td>
+          <td class="col-name">test_cases/test_audit.py::TestAudit::test_audit_1</td>
+          <td class="col-duration">1.16</td>
+          <td class="col-links"></td></tr>
+        <tr>
+          <td class="extra" colspan="4">
+            <div class="log"> -----------------------------Captured stderr setup------------------------------ <br/>INFO 2021-04-28 20:09:07,317 [test_audit.py--&gt;line:23]:=========添加项目接口开始测试==========
+INFO 2021-04-28 20:09:07,649 [fixture.py--&gt;line:36]:注册用户成功
+INFO 2021-04-28 20:09:07,649 [test_audit.py--&gt;line:31]:注册普通用户15849463379成功
+INFO 2021-04-28 20:09:07,830 [fixture.py--&gt;line:61]:登录用户成功
+INFO 2021-04-28 20:09:08,139 [fixture.py--&gt;line:36]:注册用户成功
+INFO 2021-04-28 20:09:08,139 [test_audit.py--&gt;line:47]:注册用户15859952750成功
+INFO 2021-04-28 20:09:08,340 [fixture.py--&gt;line:61]:登录用户成功
+<br/> -------------------------------Captured log setup------------------------------- <br/>INFO     py38:test_audit.py:23 =========添加项目接口开始测试==========
+INFO     py38:fixture.py:36 注册用户成功
+INFO     py38:test_audit.py:31 注册普通用户15849463379成功
+INFO     py38:fixture.py:61 登录用户成功
+INFO     py38:fixture.py:36 注册用户成功
+INFO     py38:test_audit.py:47 注册用户15859952750成功
+INFO     py38:fixture.py:61 登录用户成功<br/> ------------------------------Captured stderr call------------------------------ <br/>INFO 2021-04-28 20:09:08,399 [fixture.py--&gt;line:96]:创建项目成功
+INFO 2021-04-28 20:09:08,400 [test_audit.py--&gt;line:64]:添加项目成功！
+INFO 2021-04-28 20:09:08,400 [base_case.py--&gt;line:39]:用例【审核成功-通过】开始测试&gt;&gt;&gt;&gt;&gt;&gt;&gt;
+INFO 2021-04-28 20:09:08,459 [base_case.py--&gt;line:118]:用例【审核成功-通过】状态码断言成功！
+INFO 2021-04-28 20:09:08,459 [base_case.py--&gt;line:140]:用例【审核成功-通过】请求json结果断言成功！
+INFO 2021-04-28 20:09:08,484 [base_case.py--&gt;line:157]:用例【审核成功-通过】数据库断言成功
+INFO 2021-04-28 20:09:08,485 [base_case.py--&gt;line:53]:用例【审核成功-通过】测试结束&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;
+<br/> -------------------------------Captured log call-------------------------------- <br/>INFO     py38:fixture.py:96 创建项目成功
+INFO     py38:test_audit.py:64 添加项目成功！
+INFO     py38:base_case.py:39 用例【审核成功-通过】开始测试&gt;&gt;&gt;&gt;&gt;&gt;&gt;
+INFO     py38:base_case.py:118 用例【审核成功-通过】状态码断言成功！
+INFO     py38:base_case.py:140 用例【审核成功-通过】请求json结果断言成功！
+INFO     py38:base_case.py:157 用例【审核成功-通过】数据库断言成功
+INFO     py38:base_case.py:53 用例【审核成功-通过】测试结束&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;<br/></div></td></tr></tbody>
+      <tbody class="passed results-table-row">
+        <tr>
+          <td class="col-result">Passed</td>
+          <td class="col-name">test_cases/test_audit.py::TestAudit::test_audit_2</td>
+          <td class="col-duration">0.11</td>
+          <td class="col-links"></td></tr>
+        <tr>
+          <td class="extra" colspan="4">
+            <div class="log"> ------------------------------Captured stderr call------------------------------ <br/>INFO 2021-04-28 20:09:08,546 [fixture.py--&gt;line:96]:创建项目成功
+INFO 2021-04-28 20:09:08,547 [test_audit.py--&gt;line:64]:添加项目成功！
+INFO 2021-04-28 20:09:08,547 [base_case.py--&gt;line:39]:用例【审核成功-不通过】开始测试&gt;&gt;&gt;&gt;&gt;&gt;&gt;
+INFO 2021-04-28 20:09:08,576 [base_case.py--&gt;line:118]:用例【审核成功-不通过】状态码断言成功！
+INFO 2021-04-28 20:09:08,577 [base_case.py--&gt;line:140]:用例【审核成功-不通过】请求json结果断言成功！
+INFO 2021-04-28 20:09:08,601 [base_case.py--&gt;line:157]:用例【审核成功-不通过】数据库断言成功
+INFO 2021-04-28 20:09:08,601 [base_case.py--&gt;line:53]:用例【审核成功-不通过】测试结束&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;
+<br/> -------------------------------Captured log call-------------------------------- <br/>INFO     py38:fixture.py:96 创建项目成功
+INFO     py38:test_audit.py:64 添加项目成功！
+INFO     py38:base_case.py:39 用例【审核成功-不通过】开始测试&gt;&gt;&gt;&gt;&gt;&gt;&gt;
+INFO     py38:base_case.py:118 用例【审核成功-不通过】状态码断言成功！
+INFO     py38:base_case.py:140 用例【审核成功-不通过】请求json结果断言成功！
+INFO     py38:base_case.py:157 用例【审核成功-不通过】数据库断言成功
+INFO     py38:base_case.py:53 用例【审核成功-不通过】测试结束&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;<br/></div></td></tr></tbody>
+      <tbody class="passed results-table-row">
+        <tr>
+          <td class="col-result">Passed</td>
+          <td class="col-name">test_cases/test_audit.py::TestAudit::test_audit_3</td>
+          <td class="col-duration">0.07</td>
+          <td class="col-links"></td></tr>
+        <tr>
+          <td class="extra" colspan="4">
+            <div class="log"> ------------------------------Captured stderr call------------------------------ <br/>INFO 2021-04-28 20:09:08,647 [fixture.py--&gt;line:96]:创建项目成功
+INFO 2021-04-28 20:09:08,647 [test_audit.py--&gt;line:64]:添加项目成功！
+INFO 2021-04-28 20:09:08,647 [base_case.py--&gt;line:39]:用例【项目id为空】开始测试&gt;&gt;&gt;&gt;&gt;&gt;&gt;
+INFO 2021-04-28 20:09:08,675 [base_case.py--&gt;line:118]:用例【项目id为空】状态码断言成功！
+INFO 2021-04-28 20:09:08,675 [base_case.py--&gt;line:140]:用例【项目id为空】请求json结果断言成功！
+INFO 2021-04-28 20:09:08,676 [base_case.py--&gt;line:53]:用例【项目id为空】测试结束&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;
+<br/> -------------------------------Captured log call-------------------------------- <br/>INFO     py38:fixture.py:96 创建项目成功
+INFO     py38:test_audit.py:64 添加项目成功！
+INFO     py38:base_case.py:39 用例【项目id为空】开始测试&gt;&gt;&gt;&gt;&gt;&gt;&gt;
+INFO     py38:base_case.py:118 用例【项目id为空】状态码断言成功！
+INFO     py38:base_case.py:140 用例【项目id为空】请求json结果断言成功！
+INFO     py38:base_case.py:53 用例【项目id为空】测试结束&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;<br/></div></td></tr></tbody>
+      <tbody class="passed results-table-row">
+        <tr>
+          <td class="col-result">Passed</td>
+          <td class="col-name">test_cases/test_audit.py::TestAudit::test_audit_5</td>
+          <td class="col-duration">0.09</td>
+          <td class="col-links"></td></tr>
+        <tr>
+          <td class="extra" colspan="4">
+            <div class="log"> ------------------------------Captured stderr call------------------------------ <br/>INFO 2021-04-28 20:09:09,040 [fixture.py--&gt;line:96]:创建项目成功
+INFO 2021-04-28 20:09:09,041 [test_audit.py--&gt;line:64]:添加项目成功！
+INFO 2021-04-28 20:09:09,041 [base_case.py--&gt;line:39]:用例【不存在的项目id】开始测试&gt;&gt;&gt;&gt;&gt;&gt;&gt;
+INFO 2021-04-28 20:09:09,068 [base_case.py--&gt;line:118]:用例【不存在的项目id】状态码断言成功！
+INFO 2021-04-28 20:09:09,069 [base_case.py--&gt;line:140]:用例【不存在的项目id】请求json结果断言成功！
+INFO 2021-04-28 20:09:09,069 [base_case.py--&gt;line:53]:用例【不存在的项目id】测试结束&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;
+<br/> -------------------------------Captured log call-------------------------------- <br/>INFO     py38:fixture.py:96 创建项目成功
+INFO     py38:test_audit.py:64 添加项目成功！
+INFO     py38:base_case.py:39 用例【不存在的项目id】开始测试&gt;&gt;&gt;&gt;&gt;&gt;&gt;
+INFO     py38:base_case.py:118 用例【不存在的项目id】状态码断言成功！
+INFO     py38:base_case.py:140 用例【不存在的项目id】请求json结果断言成功！
+INFO     py38:base_case.py:53 用例【不存在的项目id】测试结束&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;<br/></div></td></tr></tbody>
+      <tbody class="passed results-table-row">
+        <tr>
+          <td class="col-result">Passed</td>
+          <td class="col-name">test_cases/test_audit.py::TestAudit::test_audit_6</td>
+          <td class="col-duration">0.07</td>
+          <td class="col-links"></td></tr>
+        <tr>
+          <td class="extra" colspan="4">
+            <div class="log"> ------------------------------Captured stderr call------------------------------ <br/>INFO 2021-04-28 20:09:09,120 [fixture.py--&gt;line:96]:创建项目成功
+INFO 2021-04-28 20:09:09,121 [test_audit.py--&gt;line:64]:添加项目成功！
+INFO 2021-04-28 20:09:09,121 [base_case.py--&gt;line:39]:用例【审核状态不是布尔值】开始测试&gt;&gt;&gt;&gt;&gt;&gt;&gt;
+INFO 2021-04-28 20:09:09,148 [base_case.py--&gt;line:118]:用例【审核状态不是布尔值】状态码断言成功！
+INFO 2021-04-28 20:09:09,148 [base_case.py--&gt;line:140]:用例【审核状态不是布尔值】请求json结果断言成功！
+INFO 2021-04-28 20:09:09,148 [base_case.py--&gt;line:53]:用例【审核状态不是布尔值】测试结束&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;
+<br/> -------------------------------Captured log call-------------------------------- <br/>INFO     py38:fixture.py:96 创建项目成功
+INFO     py38:test_audit.py:64 添加项目成功！
+INFO     py38:base_case.py:39 用例【审核状态不是布尔值】开始测试&gt;&gt;&gt;&gt;&gt;&gt;&gt;
+INFO     py38:base_case.py:118 用例【审核状态不是布尔值】状态码断言成功！
+INFO     py38:base_case.py:140 用例【审核状态不是布尔值】请求json结果断言成功！
+INFO     py38:base_case.py:53 用例【审核状态不是布尔值】测试结束&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;<br/></div></td></tr></tbody>
+      <tbody class="passed results-table-row">
+        <tr>
+          <td class="col-result">Passed</td>
+          <td class="col-name">test_cases/test_audit.py::TestAudit::test_audit_7</td>
+          <td class="col-duration">0.07</td>
+          <td class="col-links"></td></tr>
+        <tr>
+          <td class="extra" colspan="4">
+            <div class="log"> ------------------------------Captured stderr call------------------------------ <br/>INFO 2021-04-28 20:09:09,198 [fixture.py--&gt;line:96]:创建项目成功
+INFO 2021-04-28 20:09:09,199 [test_audit.py--&gt;line:64]:添加项目成功！
+INFO 2021-04-28 20:09:09,199 [base_case.py--&gt;line:39]:用例【审核状态不存在】开始测试&gt;&gt;&gt;&gt;&gt;&gt;&gt;
+INFO 2021-04-28 20:09:09,226 [base_case.py--&gt;line:118]:用例【审核状态不存在】状态码断言成功！
+INFO 2021-04-28 20:09:09,226 [base_case.py--&gt;line:140]:用例【审核状态不存在】请求json结果断言成功！
+INFO 2021-04-28 20:09:09,226 [base_case.py--&gt;line:53]:用例【审核状态不存在】测试结束&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;
+<br/> -------------------------------Captured log call-------------------------------- <br/>INFO     py38:fixture.py:96 创建项目成功
+INFO     py38:test_audit.py:64 添加项目成功！
+INFO     py38:base_case.py:39 用例【审核状态不存在】开始测试&gt;&gt;&gt;&gt;&gt;&gt;&gt;
+INFO     py38:base_case.py:118 用例【审核状态不存在】状态码断言成功！
+INFO     py38:base_case.py:140 用例【审核状态不存在】请求json结果断言成功！
+INFO     py38:base_case.py:53 用例【审核状态不存在】测试结束&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;<br/> ----------------------------Captured stderr teardown---------------------------- <br/>INFO 2021-04-28 20:09:09,227 [base_case.py--&gt;line:35]:**********审核接口测试结束**********
+<br/> -----------------------------Captured log teardown------------------------------ <br/>INFO     py38:base_case.py:35 **********审核接口测试结束**********<br/></div></td></tr></tbody>
+      <tbody class="passed results-table-row">
+        <tr>
+          <td class="col-result">Passed</td>
+          <td class="col-name">test_cases/test_course_flow.py::TestCourseFlow::test_course_1</td>
+          <td class="col-duration">0.25</td>
+          <td class="col-links"></td></tr>
+        <tr>
+          <td class="extra" colspan="4">
+            <div class="log"> -----------------------------Captured stderr setup------------------------------ <br/>INFO 2021-04-28 20:09:09,229 [base_case.py--&gt;line:31]:=========课堂派业务流接口开始测试==========
+<br/> -------------------------------Captured log setup------------------------------- <br/>INFO     py38:base_case.py:31 =========课堂派业务流接口开始测试==========<br/> ------------------------------Captured stderr call------------------------------ <br/>INFO 2021-04-28 20:09:09,230 [base_case.py--&gt;line:39]:用例【课堂派登录】开始测试&gt;&gt;&gt;&gt;&gt;&gt;&gt;
+INFO 2021-04-28 20:09:09,482 [base_case.py--&gt;line:118]:用例【课堂派登录】状态码断言成功！
+INFO 2021-04-28 20:09:09,482 [test_course_flow.py--&gt;line:54]:用例【课堂派登录】请求json结果断言成功！
+INFO 2021-04-28 20:09:09,482 [base_case.py--&gt;line:53]:用例【课堂派登录】测试结束&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;
+<br/> -------------------------------Captured log call-------------------------------- <br/>INFO     py38:base_case.py:39 用例【课堂派登录】开始测试&gt;&gt;&gt;&gt;&gt;&gt;&gt;
+INFO     py38:base_case.py:118 用例【课堂派登录】状态码断言成功！
+INFO     py38:test_course_flow.py:54 用例【课堂派登录】请求json结果断言成功！
+INFO     py38:base_case.py:53 用例【课堂派登录】测试结束&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;<br/></div></td></tr></tbody>
+      <tbody class="passed results-table-row">
+        <tr>
+          <td class="col-result">Passed</td>
+          <td class="col-name">test_cases/test_course_flow.py::TestCourseFlow::test_course_2</td>
+          <td class="col-duration">0.30</td>
+          <td class="col-links"></td></tr>
+        <tr>
+          <td class="extra" colspan="4">
+            <div class="log"> ------------------------------Captured stderr call------------------------------ <br/>INFO 2021-04-28 20:09:09,484 [base_case.py--&gt;line:39]:用例【获取所有课程信息】开始测试&gt;&gt;&gt;&gt;&gt;&gt;&gt;
+INFO 2021-04-28 20:09:09,784 [base_case.py--&gt;line:118]:用例【获取所有课程信息】状态码断言成功！
+INFO 2021-04-28 20:09:09,786 [test_course_flow.py--&gt;line:54]:用例【获取所有课程信息】请求json结果断言成功！
+INFO 2021-04-28 20:09:09,786 [base_case.py--&gt;line:53]:用例【获取所有课程信息】测试结束&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;
+<br/> -------------------------------Captured log call-------------------------------- <br/>INFO     py38:base_case.py:39 用例【获取所有课程信息】开始测试&gt;&gt;&gt;&gt;&gt;&gt;&gt;
+INFO     py38:base_case.py:118 用例【获取所有课程信息】状态码断言成功！
+INFO     py38:test_course_flow.py:54 用例【获取所有课程信息】请求json结果断言成功！
+INFO     py38:base_case.py:53 用例【获取所有课程信息】测试结束&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;<br/> ----------------------------Captured stderr teardown---------------------------- <br/>INFO 2021-04-28 20:09:09,787 [base_case.py--&gt;line:35]:**********课堂派业务流接口测试结束**********
+<br/> -----------------------------Captured log teardown------------------------------ <br/>INFO     py38:base_case.py:35 **********课堂派业务流接口测试结束**********<br/></div></td></tr></tbody>
+      <tbody class="passed results-table-row">
+        <tr>
+          <td class="col-result">Passed</td>
+          <td class="col-name">test_cases/test_invest.py::TestInvest::test_invest_01</td>
+          <td class="col-duration">0.31</td>
+          <td class="col-links"></td></tr>
+        <tr>
+          <td class="extra" colspan="4">
+            <div class="log"> -----------------------------Captured stderr setup------------------------------ <br/>INFO 2021-04-28 20:09:09,789 [base_case.py--&gt;line:31]:=========投资接口开始测试==========
+<br/> -------------------------------Captured log setup------------------------------- <br/>INFO     py38:base_case.py:31 =========投资接口开始测试==========<br/> ------------------------------Captured stderr call------------------------------ <br/>INFO 2021-04-28 20:09:09,790 [base_case.py--&gt;line:39]:用例【前置条件-注册普通融资用户】开始测试&gt;&gt;&gt;&gt;&gt;&gt;&gt;
+INFO 2021-04-28 20:09:10,104 [base_case.py--&gt;line:118]:用例【前置条件-注册普通融资用户】状态码断言成功！
+INFO 2021-04-28 20:09:10,104 [base_case.py--&gt;line:140]:用例【前置条件-注册普通融资用户】请求json结果断言成功！
+INFO 2021-04-28 20:09:10,105 [base_case.py--&gt;line:53]:用例【前置条件-注册普通融资用户】测试结束&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;
+<br/> -------------------------------Captured log call-------------------------------- <br/>INFO     py38:base_case.py:39 用例【前置条件-注册普通融资用户】开始测试&gt;&gt;&gt;&gt;&gt;&gt;&gt;
+INFO     py38:base_case.py:118 用例【前置条件-注册普通融资用户】状态码断言成功！
+INFO     py38:base_case.py:140 用例【前置条件-注册普通融资用户】请求json结果断言成功！
+INFO     py38:base_case.py:53 用例【前置条件-注册普通融资用户】测试结束&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;<br/></div></td></tr></tbody>
+      <tbody class="passed results-table-row">
+        <tr>
+          <td class="col-result">Passed</td>
+          <td class="col-name">test_cases/test_invest.py::TestInvest::test_invest_02</td>
+          <td class="col-duration">0.18</td>
+          <td class="col-links"></td></tr>
+        <tr>
+          <td class="extra" colspan="4">
+            <div class="log"> ------------------------------Captured stderr call------------------------------ <br/>INFO 2021-04-28 20:09:10,106 [base_case.py--&gt;line:39]:用例【前置条件-登陆普通融资用户】开始测试&gt;&gt;&gt;&gt;&gt;&gt;&gt;
+INFO 2021-04-28 20:09:10,286 [base_case.py--&gt;line:118]:用例【前置条件-登陆普通融资用户】状态码断言成功！
+INFO 2021-04-28 20:09:10,287 [base_case.py--&gt;line:140]:用例【前置条件-登陆普通融资用户】请求json结果断言成功！
+INFO 2021-04-28 20:09:10,287 [base_case.py--&gt;line:53]:用例【前置条件-登陆普通融资用户】测试结束&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;
+<br/> -------------------------------Captured log call-------------------------------- <br/>INFO     py38:base_case.py:39 用例【前置条件-登陆普通融资用户】开始测试&gt;&gt;&gt;&gt;&gt;&gt;&gt;
+INFO     py38:base_case.py:118 用例【前置条件-登陆普通融资用户】状态码断言成功！
+INFO     py38:base_case.py:140 用例【前置条件-登陆普通融资用户】请求json结果断言成功！
+INFO     py38:base_case.py:53 用例【前置条件-登陆普通融资用户】测试结束&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;<br/></div></td></tr></tbody>
+      <tbody class="passed results-table-row">
+        <tr>
+          <td class="col-result">Passed</td>
+          <td class="col-name">test_cases/test_invest.py::TestInvest::test_invest_03</td>
+          <td class="col-duration">0.06</td>
+          <td class="col-links"></td></tr>
+        <tr>
+          <td class="extra" colspan="4">
+            <div class="log"> ------------------------------Captured stderr call------------------------------ <br/>INFO 2021-04-28 20:09:10,289 [base_case.py--&gt;line:39]:用例【前置条件-创建项目】开始测试&gt;&gt;&gt;&gt;&gt;&gt;&gt;
+INFO 2021-04-28 20:09:10,355 [base_case.py--&gt;line:118]:用例【前置条件-创建项目】状态码断言成功！
+INFO 2021-04-28 20:09:10,355 [base_case.py--&gt;line:140]:用例【前置条件-创建项目】请求json结果断言成功！
+INFO 2021-04-28 20:09:10,356 [base_case.py--&gt;line:53]:用例【前置条件-创建项目】测试结束&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;
+<br/> -------------------------------Captured log call-------------------------------- <br/>INFO     py38:base_case.py:39 用例【前置条件-创建项目】开始测试&gt;&gt;&gt;&gt;&gt;&gt;&gt;
+INFO     py38:base_case.py:118 用例【前置条件-创建项目】状态码断言成功！
+INFO     py38:base_case.py:140 用例【前置条件-创建项目】请求json结果断言成功！
+INFO     py38:base_case.py:53 用例【前置条件-创建项目】测试结束&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;<br/></div></td></tr></tbody>
+      <tbody class="passed results-table-row">
+        <tr>
+          <td class="col-result">Passed</td>
+          <td class="col-name">test_cases/test_invest.py::TestInvest::test_invest_04</td>
+          <td class="col-duration">0.30</td>
+          <td class="col-links"></td></tr>
+        <tr>
+          <td class="extra" colspan="4">
+            <div class="log"> ------------------------------Captured stderr call------------------------------ <br/>INFO 2021-04-28 20:09:10,358 [base_case.py--&gt;line:39]:用例【前置条件-注册投资普通用户1】开始测试&gt;&gt;&gt;&gt;&gt;&gt;&gt;
+INFO 2021-04-28 20:09:10,660 [base_case.py--&gt;line:118]:用例【前置条件-注册投资普通用户1】状态码断言成功！
+INFO 2021-04-28 20:09:10,660 [base_case.py--&gt;line:140]:用例【前置条件-注册投资普通用户1】请求json结果断言成功！
+INFO 2021-04-28 20:09:10,660 [base_case.py--&gt;line:53]:用例【前置条件-注册投资普通用户1】测试结束&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;
+<br/> -------------------------------Captured log call-------------------------------- <br/>INFO     py38:base_case.py:39 用例【前置条件-注册投资普通用户1】开始测试&gt;&gt;&gt;&gt;&gt;&gt;&gt;
+INFO     py38:base_case.py:118 用例【前置条件-注册投资普通用户1】状态码断言成功！
+INFO     py38:base_case.py:140 用例【前置条件-注册投资普通用户1】请求json结果断言成功！
+INFO     py38:base_case.py:53 用例【前置条件-注册投资普通用户1】测试结束&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;<br/></div></td></tr></tbody>
+      <tbody class="passed results-table-row">
+        <tr>
+          <td class="col-result">Passed</td>
+          <td class="col-name">test_cases/test_invest.py::TestInvest::test_invest_05</td>
+          <td class="col-duration">0.25</td>
+          <td class="col-links"></td></tr>
+        <tr>
+          <td class="extra" colspan="4">
+            <div class="log"> ------------------------------Captured stderr call------------------------------ <br/>INFO 2021-04-28 20:09:10,663 [base_case.py--&gt;line:39]:用例【前置条件-登录投资普通用户1】开始测试&gt;&gt;&gt;&gt;&gt;&gt;&gt;
+INFO 2021-04-28 20:09:10,916 [base_case.py--&gt;line:118]:用例【前置条件-登录投资普通用户1】状态码断言成功！
+INFO 2021-04-28 20:09:10,916 [base_case.py--&gt;line:140]:用例【前置条件-登录投资普通用户1】请求json结果断言成功！
+INFO 2021-04-28 20:09:10,921 [base_case.py--&gt;line:53]:用例【前置条件-登录投资普通用户1】测试结束&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;
+<br/> -------------------------------Captured log call-------------------------------- <br/>INFO     py38:base_case.py:39 用例【前置条件-登录投资普通用户1】开始测试&gt;&gt;&gt;&gt;&gt;&gt;&gt;
+INFO     py38:base_case.py:118 用例【前置条件-登录投资普通用户1】状态码断言成功！
+INFO     py38:base_case.py:140 用例【前置条件-登录投资普通用户1】请求json结果断言成功！
+INFO     py38:base_case.py:53 用例【前置条件-登录投资普通用户1】测试结束&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;<br/></div></td></tr></tbody>
+      <tbody class="passed results-table-row">
+        <tr>
+          <td class="col-result">Passed</td>
+          <td class="col-name">test_cases/test_invest.py::TestInvest::test_invest_06</td>
+          <td class="col-duration">0.03</td>
+          <td class="col-links"></td></tr>
+        <tr>
+          <td class="extra" colspan="4">
+            <div class="log"> ------------------------------Captured stderr call------------------------------ <br/>INFO 2021-04-28 20:09:10,923 [base_case.py--&gt;line:39]:用例【前置条件-投资普通用户1充值】开始测试&gt;&gt;&gt;&gt;&gt;&gt;&gt;
+INFO 2021-04-28 20:09:10,957 [base_case.py--&gt;line:118]:用例【前置条件-投资普通用户1充值】状态码断言成功！
+INFO 2021-04-28 20:09:10,958 [base_case.py--&gt;line:140]:用例【前置条件-投资普通用户1充值】请求json结果断言成功！
+INFO 2021-04-28 20:09:10,958 [base_case.py--&gt;line:53]:用例【前置条件-投资普通用户1充值】测试结束&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;
+<br/> -------------------------------Captured log call-------------------------------- <br/>INFO     py38:base_case.py:39 用例【前置条件-投资普通用户1充值】开始测试&gt;&gt;&gt;&gt;&gt;&gt;&gt;
+INFO     py38:base_case.py:118 用例【前置条件-投资普通用户1充值】状态码断言成功！
+INFO     py38:base_case.py:140 用例【前置条件-投资普通用户1充值】请求json结果断言成功！
+INFO     py38:base_case.py:53 用例【前置条件-投资普通用户1充值】测试结束&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;<br/></div></td></tr></tbody>
+      <tbody class="passed results-table-row">
+        <tr>
+          <td class="col-result">Passed</td>
+          <td class="col-name">test_cases/test_invest.py::TestInvest::test_invest_07</td>
+          <td class="col-duration">0.35</td>
+          <td class="col-links"></td></tr>
+        <tr>
+          <td class="extra" colspan="4">
+            <div class="log"> ------------------------------Captured stderr call------------------------------ <br/>INFO 2021-04-28 20:09:10,960 [base_case.py--&gt;line:39]:用例【前置条件-注册投资普通用户2】开始测试&gt;&gt;&gt;&gt;&gt;&gt;&gt;
+INFO 2021-04-28 20:09:11,315 [base_case.py--&gt;line:118]:用例【前置条件-注册投资普通用户2】状态码断言成功！
+INFO 2021-04-28 20:09:11,316 [base_case.py--&gt;line:140]:用例【前置条件-注册投资普通用户2】请求json结果断言成功！
+INFO 2021-04-28 20:09:11,316 [base_case.py--&gt;line:53]:用例【前置条件-注册投资普通用户2】测试结束&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;
+<br/> -------------------------------Captured log call-------------------------------- <br/>INFO     py38:base_case.py:39 用例【前置条件-注册投资普通用户2】开始测试&gt;&gt;&gt;&gt;&gt;&gt;&gt;
+INFO     py38:base_case.py:118 用例【前置条件-注册投资普通用户2】状态码断言成功！
+INFO     py38:base_case.py:140 用例【前置条件-注册投资普通用户2】请求json结果断言成功！
+INFO     py38:base_case.py:53 用例【前置条件-注册投资普通用户2】测试结束&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;<br/></div></td></tr></tbody>
+      <tbody class="passed results-table-row">
+        <tr>
+          <td class="col-result">Passed</td>
+          <td class="col-name">test_cases/test_invest.py::TestInvest::test_invest_08</td>
+          <td class="col-duration">0.24</td>
+          <td class="col-links"></td></tr>
+        <tr>
+          <td class="extra" colspan="4">
+            <div class="log"> ------------------------------Captured stderr call------------------------------ <br/>INFO 2021-04-28 20:09:11,318 [base_case.py--&gt;line:39]:用例【前置条件-登录投资普通用户2】开始测试&gt;&gt;&gt;&gt;&gt;&gt;&gt;
+INFO 2021-04-28 20:09:11,565 [base_case.py--&gt;line:118]:用例【前置条件-登录投资普通用户2】状态码断言成功！
+INFO 2021-04-28 20:09:11,565 [base_case.py--&gt;line:140]:用例【前置条件-登录投资普通用户2】请求json结果断言成功！
+INFO 2021-04-28 20:09:11,565 [base_case.py--&gt;line:53]:用例【前置条件-登录投资普通用户2】测试结束&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;
+<br/> -------------------------------Captured log call-------------------------------- <br/>INFO     py38:base_case.py:39 用例【前置条件-登录投资普通用户2】开始测试&gt;&gt;&gt;&gt;&gt;&gt;&gt;
+INFO     py38:base_case.py:118 用例【前置条件-登录投资普通用户2】状态码断言成功！
+INFO     py38:base_case.py:140 用例【前置条件-登录投资普通用户2】请求json结果断言成功！
+INFO     py38:base_case.py:53 用例【前置条件-登录投资普通用户2】测试结束&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;<br/></div></td></tr></tbody>
+      <tbody class="passed results-table-row">
+        <tr>
+          <td class="col-result">Passed</td>
+          <td class="col-name">test_cases/test_invest.py::TestInvest::test_invest_09</td>
+          <td class="col-duration">0.03</td>
+          <td class="col-links"></td></tr>
+        <tr>
+          <td class="extra" colspan="4">
+            <div class="log"> ------------------------------Captured stderr call------------------------------ <br/>INFO 2021-04-28 20:09:11,567 [base_case.py--&gt;line:39]:用例【前置条件-投资普通用户2充值】开始测试&gt;&gt;&gt;&gt;&gt;&gt;&gt;
+INFO 2021-04-28 20:09:11,600 [base_case.py--&gt;line:118]:用例【前置条件-投资普通用户2充值】状态码断言成功！
+INFO 2021-04-28 20:09:11,600 [base_case.py--&gt;line:140]:用例【前置条件-投资普通用户2充值】请求json结果断言成功！
+INFO 2021-04-28 20:09:11,601 [base_case.py--&gt;line:53]:用例【前置条件-投资普通用户2充值】测试结束&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;
+<br/> -------------------------------Captured log call-------------------------------- <br/>INFO     py38:base_case.py:39 用例【前置条件-投资普通用户2充值】开始测试&gt;&gt;&gt;&gt;&gt;&gt;&gt;
+INFO     py38:base_case.py:118 用例【前置条件-投资普通用户2充值】状态码断言成功！
+INFO     py38:base_case.py:140 用例【前置条件-投资普通用户2充值】请求json结果断言成功！
+INFO     py38:base_case.py:53 用例【前置条件-投资普通用户2充值】测试结束&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;<br/></div></td></tr></tbody>
+      <tbody class="passed results-table-row">
+        <tr>
+          <td class="col-result">Passed</td>
+          <td class="col-name">test_cases/test_invest.py::TestInvest::test_invest_10</td>
+          <td class="col-duration">0.29</td>
+          <td class="col-links"></td></tr>
+        <tr>
+          <td class="extra" colspan="4">
+            <div class="log"> ------------------------------Captured stderr call------------------------------ <br/>INFO 2021-04-28 20:09:11,603 [base_case.py--&gt;line:39]:用例【前置条件-注册管理员用户】开始测试&gt;&gt;&gt;&gt;&gt;&gt;&gt;
+INFO 2021-04-28 20:09:11,895 [base_case.py--&gt;line:118]:用例【前置条件-注册管理员用户】状态码断言成功！
+INFO 2021-04-28 20:09:11,896 [base_case.py--&gt;line:140]:用例【前置条件-注册管理员用户】请求json结果断言成功！
+INFO 2021-04-28 20:09:11,896 [base_case.py--&gt;line:53]:用例【前置条件-注册管理员用户】测试结束&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;
+<br/> -------------------------------Captured log call-------------------------------- <br/>INFO     py38:base_case.py:39 用例【前置条件-注册管理员用户】开始测试&gt;&gt;&gt;&gt;&gt;&gt;&gt;
+INFO     py38:base_case.py:118 用例【前置条件-注册管理员用户】状态码断言成功！
+INFO     py38:base_case.py:140 用例【前置条件-注册管理员用户】请求json结果断言成功！
+INFO     py38:base_case.py:53 用例【前置条件-注册管理员用户】测试结束&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;<br/></div></td></tr></tbody>
+      <tbody class="passed results-table-row">
+        <tr>
+          <td class="col-result">Passed</td>
+          <td class="col-name">test_cases/test_invest.py::TestInvest::test_invest_11</td>
+          <td class="col-duration">0.16</td>
+          <td class="col-links"></td></tr>
+        <tr>
+          <td class="extra" colspan="4">
+            <div class="log"> ------------------------------Captured stderr call------------------------------ <br/>INFO 2021-04-28 20:09:11,897 [base_case.py--&gt;line:39]:用例【前置条件-登陆管理员用户】开始测试&gt;&gt;&gt;&gt;&gt;&gt;&gt;
+INFO 2021-04-28 20:09:12,060 [base_case.py--&gt;line:118]:用例【前置条件-登陆管理员用户】状态码断言成功！
+INFO 2021-04-28 20:09:12,060 [base_case.py--&gt;line:140]:用例【前置条件-登陆管理员用户】请求json结果断言成功！
+INFO 2021-04-28 20:09:12,060 [base_case.py--&gt;line:53]:用例【前置条件-登陆管理员用户】测试结束&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;
+<br/> -------------------------------Captured log call-------------------------------- <br/>INFO     py38:base_case.py:39 用例【前置条件-登陆管理员用户】开始测试&gt;&gt;&gt;&gt;&gt;&gt;&gt;
+INFO     py38:base_case.py:118 用例【前置条件-登陆管理员用户】状态码断言成功！
+INFO     py38:base_case.py:140 用例【前置条件-登陆管理员用户】请求json结果断言成功！
+INFO     py38:base_case.py:53 用例【前置条件-登陆管理员用户】测试结束&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;<br/></div></td></tr></tbody>
+      <tbody class="passed results-table-row">
+        <tr>
+          <td class="col-result">Passed</td>
+          <td class="col-name">test_cases/test_invest.py::TestInvest::test_invest_12</td>
+          <td class="col-duration">0.03</td>
+          <td class="col-links"></td></tr>
+        <tr>
+          <td class="extra" colspan="4">
+            <div class="log"> ------------------------------Captured stderr call------------------------------ <br/>INFO 2021-04-28 20:09:12,062 [base_case.py--&gt;line:39]:用例【投资项目不是竞标中状态】开始测试&gt;&gt;&gt;&gt;&gt;&gt;&gt;
+INFO 2021-04-28 20:09:12,094 [base_case.py--&gt;line:118]:用例【投资项目不是竞标中状态】状态码断言成功！
+INFO 2021-04-28 20:09:12,095 [base_case.py--&gt;line:140]:用例【投资项目不是竞标中状态】请求json结果断言成功！
+INFO 2021-04-28 20:09:12,095 [base_case.py--&gt;line:53]:用例【投资项目不是竞标中状态】测试结束&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;
+<br/> -------------------------------Captured log call-------------------------------- <br/>INFO     py38:base_case.py:39 用例【投资项目不是竞标中状态】开始测试&gt;&gt;&gt;&gt;&gt;&gt;&gt;
+INFO     py38:base_case.py:118 用例【投资项目不是竞标中状态】状态码断言成功！
+INFO     py38:base_case.py:140 用例【投资项目不是竞标中状态】请求json结果断言成功！
+INFO     py38:base_case.py:53 用例【投资项目不是竞标中状态】测试结束&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;<br/></div></td></tr></tbody>
+      <tbody class="passed results-table-row">
+        <tr>
+          <td class="col-result">Passed</td>
+          <td class="col-name">test_cases/test_invest.py::TestInvest::test_invest_13</td>
+          <td class="col-duration">0.03</td>
+          <td class="col-links"></td></tr>
+        <tr>
+          <td class="extra" colspan="4">
+            <div class="log"> ------------------------------Captured stderr call------------------------------ <br/>INFO 2021-04-28 20:09:12,097 [base_case.py--&gt;line:39]:用例【前置条件-审核项目】开始测试&gt;&gt;&gt;&gt;&gt;&gt;&gt;
+INFO 2021-04-28 20:09:12,126 [base_case.py--&gt;line:118]:用例【前置条件-审核项目】状态码断言成功！
+INFO 2021-04-28 20:09:12,127 [base_case.py--&gt;line:140]:用例【前置条件-审核项目】请求json结果断言成功！
+INFO 2021-04-28 20:09:12,127 [base_case.py--&gt;line:53]:用例【前置条件-审核项目】测试结束&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;
+<br/> -------------------------------Captured log call-------------------------------- <br/>INFO     py38:base_case.py:39 用例【前置条件-审核项目】开始测试&gt;&gt;&gt;&gt;&gt;&gt;&gt;
+INFO     py38:base_case.py:118 用例【前置条件-审核项目】状态码断言成功！
+INFO     py38:base_case.py:140 用例【前置条件-审核项目】请求json结果断言成功！
+INFO     py38:base_case.py:53 用例【前置条件-审核项目】测试结束&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;<br/></div></td></tr></tbody>
+      <tbody class="passed results-table-row">
+        <tr>
+          <td class="col-result">Passed</td>
+          <td class="col-name">test_cases/test_invest.py::TestInvest::test_invest_14</td>
+          <td class="col-duration">0.03</td>
+          <td class="col-links"></td></tr>
+        <tr>
+          <td class="extra" colspan="4">
+            <div class="log"> ------------------------------Captured stderr call------------------------------ <br/>INFO 2021-04-28 20:09:12,130 [base_case.py--&gt;line:39]:用例【用户id为空】开始测试&gt;&gt;&gt;&gt;&gt;&gt;&gt;
+INFO 2021-04-28 20:09:12,159 [base_case.py--&gt;line:118]:用例【用户id为空】状态码断言成功！
+INFO 2021-04-28 20:09:12,159 [base_case.py--&gt;line:140]:用例【用户id为空】请求json结果断言成功！
+INFO 2021-04-28 20:09:12,159 [base_case.py--&gt;line:53]:用例【用户id为空】测试结束&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;
+<br/> -------------------------------Captured log call-------------------------------- <br/>INFO     py38:base_case.py:39 用例【用户id为空】开始测试&gt;&gt;&gt;&gt;&gt;&gt;&gt;
+INFO     py38:base_case.py:118 用例【用户id为空】状态码断言成功！
+INFO     py38:base_case.py:140 用例【用户id为空】请求json结果断言成功！
+INFO     py38:base_case.py:53 用例【用户id为空】测试结束&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;<br/></div></td></tr></tbody>
+      <tbody class="passed results-table-row">
+        <tr>
+          <td class="col-result">Passed</td>
+          <td class="col-name">test_cases/test_invest.py::TestInvest::test_invest_15</td>
+          <td class="col-duration">0.03</td>
+          <td class="col-links"></td></tr>
+        <tr>
+          <td class="extra" colspan="4">
+            <div class="log"> ------------------------------Captured stderr call------------------------------ <br/>INFO 2021-04-28 20:09:12,161 [base_case.py--&gt;line:39]:用例【投资金额为空】开始测试&gt;&gt;&gt;&gt;&gt;&gt;&gt;
+INFO 2021-04-28 20:09:12,189 [base_case.py--&gt;line:118]:用例【投资金额为空】状态码断言成功！
+INFO 2021-04-28 20:09:12,189 [base_case.py--&gt;line:140]:用例【投资金额为空】请求json结果断言成功！
+INFO 2021-04-28 20:09:12,189 [base_case.py--&gt;line:53]:用例【投资金额为空】测试结束&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;
+<br/> -------------------------------Captured log call-------------------------------- <br/>INFO     py38:base_case.py:39 用例【投资金额为空】开始测试&gt;&gt;&gt;&gt;&gt;&gt;&gt;
+INFO     py38:base_case.py:118 用例【投资金额为空】状态码断言成功！
+INFO     py38:base_case.py:140 用例【投资金额为空】请求json结果断言成功！
+INFO     py38:base_case.py:53 用例【投资金额为空】测试结束&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;<br/></div></td></tr></tbody>
+      <tbody class="passed results-table-row">
+        <tr>
+          <td class="col-result">Passed</td>
+          <td class="col-name">test_cases/test_invest.py::TestInvest::test_invest_17</td>
+          <td class="col-duration">0.18</td>
+          <td class="col-links"></td></tr>
+        <tr>
+          <td class="extra" colspan="4">
+            <div class="log"> ------------------------------Captured stderr call------------------------------ <br/>INFO 2021-04-28 20:09:12,255 [base_case.py--&gt;line:39]:用例【投资成功】开始测试&gt;&gt;&gt;&gt;&gt;&gt;&gt;
+INFO 2021-04-28 20:09:12,290 [base_case.py--&gt;line:118]:用例【投资成功】状态码断言成功！
+INFO 2021-04-28 20:09:12,290 [base_case.py--&gt;line:140]:用例【投资成功】请求json结果断言成功！
+INFO 2021-04-28 20:09:12,438 [test_invest.py--&gt;line:64]:用例【投资成功】数据库断言成功
+INFO 2021-04-28 20:09:12,438 [base_case.py--&gt;line:53]:用例【投资成功】测试结束&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;
+<br/> -------------------------------Captured log call-------------------------------- <br/>INFO     py38:base_case.py:39 用例【投资成功】开始测试&gt;&gt;&gt;&gt;&gt;&gt;&gt;
+INFO     py38:base_case.py:118 用例【投资成功】状态码断言成功！
+INFO     py38:base_case.py:140 用例【投资成功】请求json结果断言成功！
+INFO     py38:test_invest.py:64 用例【投资成功】数据库断言成功
+INFO     py38:base_case.py:53 用例【投资成功】测试结束&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;<br/></div></td></tr></tbody>
+      <tbody class="passed results-table-row">
+        <tr>
+          <td class="col-result">Passed</td>
+          <td class="col-name">test_cases/test_invest.py::TestInvest::test_invest_18</td>
+          <td class="col-duration">0.03</td>
+          <td class="col-links"></td></tr>
+        <tr>
+          <td class="extra" colspan="4">
+            <div class="log"> ------------------------------Captured stderr call------------------------------ <br/>INFO 2021-04-28 20:09:12,440 [base_case.py--&gt;line:39]:用例【投资金额大于项目剩余可投金额】开始测试&gt;&gt;&gt;&gt;&gt;&gt;&gt;
+INFO 2021-04-28 20:09:12,471 [base_case.py--&gt;line:118]:用例【投资金额大于项目剩余可投金额】状态码断言成功！
+INFO 2021-04-28 20:09:12,471 [base_case.py--&gt;line:140]:用例【投资金额大于项目剩余可投金额】请求json结果断言成功！
+INFO 2021-04-28 20:09:12,472 [base_case.py--&gt;line:53]:用例【投资金额大于项目剩余可投金额】测试结束&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;
+<br/> -------------------------------Captured log call-------------------------------- <br/>INFO     py38:base_case.py:39 用例【投资金额大于项目剩余可投金额】开始测试&gt;&gt;&gt;&gt;&gt;&gt;&gt;
+INFO     py38:base_case.py:118 用例【投资金额大于项目剩余可投金额】状态码断言成功！
+INFO     py38:base_case.py:140 用例【投资金额大于项目剩余可投金额】请求json结果断言成功！
+INFO     py38:base_case.py:53 用例【投资金额大于项目剩余可投金额】测试结束&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;<br/></div></td></tr></tbody>
+      <tbody class="passed results-table-row">
+        <tr>
+          <td class="col-result">Passed</td>
+          <td class="col-name">test_cases/test_invest.py::TestInvest::test_invest_19</td>
+          <td class="col-duration">0.22</td>
+          <td class="col-links"></td></tr>
+        <tr>
+          <td class="extra" colspan="4">
+            <div class="log"> ------------------------------Captured stderr call------------------------------ <br/>INFO 2021-04-28 20:09:12,473 [base_case.py--&gt;line:39]:用例【投资成功并满标】开始测试&gt;&gt;&gt;&gt;&gt;&gt;&gt;
+INFO 2021-04-28 20:09:12,519 [base_case.py--&gt;line:118]:用例【投资成功并满标】状态码断言成功！
+INFO 2021-04-28 20:09:12,519 [base_case.py--&gt;line:140]:用例【投资成功并满标】请求json结果断言成功！
+INFO 2021-04-28 20:09:12,697 [test_invest.py--&gt;line:64]:用例【投资成功并满标】数据库断言成功
+INFO 2021-04-28 20:09:12,697 [base_case.py--&gt;line:53]:用例【投资成功并满标】测试结束&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;
+<br/> -------------------------------Captured log call-------------------------------- <br/>INFO     py38:base_case.py:39 用例【投资成功并满标】开始测试&gt;&gt;&gt;&gt;&gt;&gt;&gt;
+INFO     py38:base_case.py:118 用例【投资成功并满标】状态码断言成功！
+INFO     py38:base_case.py:140 用例【投资成功并满标】请求json结果断言成功！
+INFO     py38:test_invest.py:64 用例【投资成功并满标】数据库断言成功
+INFO     py38:base_case.py:53 用例【投资成功并满标】测试结束&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;<br/> ----------------------------Captured stderr teardown---------------------------- <br/>INFO 2021-04-28 20:09:12,698 [base_case.py--&gt;line:35]:**********投资接口测试结束**********
+<br/> -----------------------------Captured log teardown------------------------------ <br/>INFO     py38:base_case.py:35 **********投资接口测试结束**********<br/></div></td></tr></tbody>
+      <tbody class="passed results-table-row">
+        <tr>
+          <td class="col-result">Passed</td>
+          <td class="col-name">test_cases/test_invest_flow.py::TestInvestFlow::test_invest_flow_01</td>
+          <td class="col-duration">0.41</td>
+          <td class="col-links"></td></tr>
+        <tr>
+          <td class="extra" colspan="4">
+            <div class="log"> -----------------------------Captured stderr setup------------------------------ <br/>INFO 2021-04-28 20:09:12,699 [base_case.py--&gt;line:31]:=========投资业务流接口开始测试==========
+<br/> -------------------------------Captured log setup------------------------------- <br/>INFO     py38:base_case.py:31 =========投资业务流接口开始测试==========<br/> ------------------------------Captured stderr call------------------------------ <br/>INFO 2021-04-28 20:09:12,700 [base_case.py--&gt;line:39]:用例【注册普通融资用户】开始测试&gt;&gt;&gt;&gt;&gt;&gt;&gt;
+INFO 2021-04-28 20:09:12,991 [base_case.py--&gt;line:118]:用例【注册普通融资用户】状态码断言成功！
+INFO 2021-04-28 20:09:12,992 [base_case.py--&gt;line:140]:用例【注册普通融资用户】请求json结果断言成功！
+INFO 2021-04-28 20:09:13,116 [base_case.py--&gt;line:157]:用例【注册普通融资用户】数据库断言成功
+INFO 2021-04-28 20:09:13,116 [base_case.py--&gt;line:53]:用例【注册普通融资用户】测试结束&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;
+<br/> -------------------------------Captured log call-------------------------------- <br/>INFO     py38:base_case.py:39 用例【注册普通融资用户】开始测试&gt;&gt;&gt;&gt;&gt;&gt;&gt;
+INFO     py38:base_case.py:118 用例【注册普通融资用户】状态码断言成功！
+INFO     py38:base_case.py:140 用例【注册普通融资用户】请求json结果断言成功！
+INFO     py38:base_case.py:157 用例【注册普通融资用户】数据库断言成功
+INFO     py38:base_case.py:53 用例【注册普通融资用户】测试结束&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;<br/></div></td></tr></tbody>
+      <tbody class="passed results-table-row">
+        <tr>
+          <td class="col-result">Passed</td>
+          <td class="col-name">test_cases/test_invest_flow.py::TestInvestFlow::test_invest_flow_02</td>
+          <td class="col-duration">0.17</td>
+          <td class="col-links"></td></tr>
+        <tr>
+          <td class="extra" colspan="4">
+            <div class="log"> ------------------------------Captured stderr call------------------------------ <br/>INFO 2021-04-28 20:09:13,118 [base_case.py--&gt;line:39]:用例【登录普通融资用户】开始测试&gt;&gt;&gt;&gt;&gt;&gt;&gt;
+INFO 2021-04-28 20:09:13,296 [base_case.py--&gt;line:118]:用例【登录普通融资用户】状态码断言成功！
+INFO 2021-04-28 20:09:13,296 [base_case.py--&gt;line:140]:用例【登录普通融资用户】请求json结果断言成功！
+INFO 2021-04-28 20:09:13,297 [base_case.py--&gt;line:53]:用例【登录普通融资用户】测试结束&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;
+<br/> -------------------------------Captured log call-------------------------------- <br/>INFO     py38:base_case.py:39 用例【登录普通融资用户】开始测试&gt;&gt;&gt;&gt;&gt;&gt;&gt;
+INFO     py38:base_case.py:118 用例【登录普通融资用户】状态码断言成功！
+INFO     py38:base_case.py:140 用例【登录普通融资用户】请求json结果断言成功！
+INFO     py38:base_case.py:53 用例【登录普通融资用户】测试结束&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;<br/></div></td></tr></tbody>
+      <tbody class="passed results-table-row">
+        <tr>
+          <td class="col-result">Passed</td>
+          <td class="col-name">test_cases/test_invest_flow.py::TestInvestFlow::test_invest_flow_03</td>
+          <td class="col-duration">0.03</td>
+          <td class="col-links"></td></tr>
+        <tr>
+          <td class="extra" colspan="4">
+            <div class="log"> ------------------------------Captured stderr call------------------------------ <br/>INFO 2021-04-28 20:09:13,298 [base_case.py--&gt;line:39]:用例【创建项目】开始测试&gt;&gt;&gt;&gt;&gt;&gt;&gt;
+INFO 2021-04-28 20:09:13,329 [base_case.py--&gt;line:118]:用例【创建项目】状态码断言成功！
+INFO 2021-04-28 20:09:13,329 [base_case.py--&gt;line:140]:用例【创建项目】请求json结果断言成功！
+INFO 2021-04-28 20:09:13,330 [base_case.py--&gt;line:53]:用例【创建项目】测试结束&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;
+<br/> -------------------------------Captured log call-------------------------------- <br/>INFO     py38:base_case.py:39 用例【创建项目】开始测试&gt;&gt;&gt;&gt;&gt;&gt;&gt;
+INFO     py38:base_case.py:118 用例【创建项目】状态码断言成功！
+INFO     py38:base_case.py:140 用例【创建项目】请求json结果断言成功！
+INFO     py38:base_case.py:53 用例【创建项目】测试结束&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;<br/></div></td></tr></tbody>
+      <tbody class="passed results-table-row">
+        <tr>
+          <td class="col-result">Passed</td>
+          <td class="col-name">test_cases/test_invest_flow.py::TestInvestFlow::test_invest_flow_04</td>
+          <td class="col-duration">0.28</td>
+          <td class="col-links"></td></tr>
+        <tr>
+          <td class="extra" colspan="4">
+            <div class="log"> ------------------------------Captured stderr call------------------------------ <br/>INFO 2021-04-28 20:09:13,331 [base_case.py--&gt;line:39]:用例【注册管理员用户】开始测试&gt;&gt;&gt;&gt;&gt;&gt;&gt;
+INFO 2021-04-28 20:09:13,614 [base_case.py--&gt;line:118]:用例【注册管理员用户】状态码断言成功！
+INFO 2021-04-28 20:09:13,614 [base_case.py--&gt;line:140]:用例【注册管理员用户】请求json结果断言成功！
+INFO 2021-04-28 20:09:13,614 [base_case.py--&gt;line:53]:用例【注册管理员用户】测试结束&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;
+<br/> -------------------------------Captured log call-------------------------------- <br/>INFO     py38:base_case.py:39 用例【注册管理员用户】开始测试&gt;&gt;&gt;&gt;&gt;&gt;&gt;
+INFO     py38:base_case.py:118 用例【注册管理员用户】状态码断言成功！
+INFO     py38:base_case.py:140 用例【注册管理员用户】请求json结果断言成功！
+INFO     py38:base_case.py:53 用例【注册管理员用户】测试结束&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;<br/></div></td></tr></tbody>
+      <tbody class="passed results-table-row">
+        <tr>
+          <td class="col-result">Passed</td>
+          <td class="col-name">test_cases/test_invest_flow.py::TestInvestFlow::test_invest_flow_05</td>
+          <td class="col-duration">0.16</td>
+          <td class="col-links"></td></tr>
+        <tr>
+          <td class="extra" colspan="4">
+            <div class="log"> ------------------------------Captured stderr call------------------------------ <br/>INFO 2021-04-28 20:09:13,617 [base_case.py--&gt;line:39]:用例【登录管理员用户】开始测试&gt;&gt;&gt;&gt;&gt;&gt;&gt;
+INFO 2021-04-28 20:09:13,781 [base_case.py--&gt;line:118]:用例【登录管理员用户】状态码断言成功！
+INFO 2021-04-28 20:09:13,781 [base_case.py--&gt;line:140]:用例【登录管理员用户】请求json结果断言成功！
+INFO 2021-04-28 20:09:13,781 [base_case.py--&gt;line:53]:用例【登录管理员用户】测试结束&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;
+<br/> -------------------------------Captured log call-------------------------------- <br/>INFO     py38:base_case.py:39 用例【登录管理员用户】开始测试&gt;&gt;&gt;&gt;&gt;&gt;&gt;
+INFO     py38:base_case.py:118 用例【登录管理员用户】状态码断言成功！
+INFO     py38:base_case.py:140 用例【登录管理员用户】请求json结果断言成功！
+INFO     py38:base_case.py:53 用例【登录管理员用户】测试结束&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;<br/></div></td></tr></tbody>
+      <tbody class="passed results-table-row">
+        <tr>
+          <td class="col-result">Passed</td>
+          <td class="col-name">test_cases/test_invest_flow.py::TestInvestFlow::test_invest_flow_06</td>
+          <td class="col-duration">0.03</td>
+          <td class="col-links"></td></tr>
+        <tr>
+          <td class="extra" colspan="4">
+            <div class="log"> ------------------------------Captured stderr call------------------------------ <br/>INFO 2021-04-28 20:09:13,783 [base_case.py--&gt;line:39]:用例【审核项目】开始测试&gt;&gt;&gt;&gt;&gt;&gt;&gt;
+INFO 2021-04-28 20:09:13,813 [base_case.py--&gt;line:118]:用例【审核项目】状态码断言成功！
+INFO 2021-04-28 20:09:13,813 [base_case.py--&gt;line:140]:用例【审核项目】请求json结果断言成功！
+INFO 2021-04-28 20:09:13,813 [base_case.py--&gt;line:53]:用例【审核项目】测试结束&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;
+<br/> -------------------------------Captured log call-------------------------------- <br/>INFO     py38:base_case.py:39 用例【审核项目】开始测试&gt;&gt;&gt;&gt;&gt;&gt;&gt;
+INFO     py38:base_case.py:118 用例【审核项目】状态码断言成功！
+INFO     py38:base_case.py:140 用例【审核项目】请求json结果断言成功！
+INFO     py38:base_case.py:53 用例【审核项目】测试结束&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;<br/></div></td></tr></tbody>
+      <tbody class="passed results-table-row">
+        <tr>
+          <td class="col-result">Passed</td>
+          <td class="col-name">test_cases/test_invest_flow.py::TestInvestFlow::test_invest_flow_07</td>
+          <td class="col-duration">0.28</td>
+          <td class="col-links"></td></tr>
+        <tr>
+          <td class="extra" colspan="4">
+            <div class="log"> ------------------------------Captured stderr call------------------------------ <br/>INFO 2021-04-28 20:09:13,815 [base_case.py--&gt;line:39]:用例【注册普通投资用户】开始测试&gt;&gt;&gt;&gt;&gt;&gt;&gt;
+INFO 2021-04-28 20:09:14,098 [base_case.py--&gt;line:118]:用例【注册普通投资用户】状态码断言成功！
+INFO 2021-04-28 20:09:14,099 [base_case.py--&gt;line:140]:用例【注册普通投资用户】请求json结果断言成功！
+INFO 2021-04-28 20:09:14,099 [base_case.py--&gt;line:53]:用例【注册普通投资用户】测试结束&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;
+<br/> -------------------------------Captured log call-------------------------------- <br/>INFO     py38:base_case.py:39 用例【注册普通投资用户】开始测试&gt;&gt;&gt;&gt;&gt;&gt;&gt;
+INFO     py38:base_case.py:118 用例【注册普通投资用户】状态码断言成功！
+INFO     py38:base_case.py:140 用例【注册普通投资用户】请求json结果断言成功！
+INFO     py38:base_case.py:53 用例【注册普通投资用户】测试结束&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;<br/></div></td></tr></tbody>
+      <tbody class="passed results-table-row">
+        <tr>
+          <td class="col-result">Passed</td>
+          <td class="col-name">test_cases/test_invest_flow.py::TestInvestFlow::test_invest_flow_08</td>
+          <td class="col-duration">0.17</td>
+          <td class="col-links"></td></tr>
+        <tr>
+          <td class="extra" colspan="4">
+            <div class="log"> ------------------------------Captured stderr call------------------------------ <br/>INFO 2021-04-28 20:09:14,100 [base_case.py--&gt;line:39]:用例【登录普通投资用户】开始测试&gt;&gt;&gt;&gt;&gt;&gt;&gt;
+INFO 2021-04-28 20:09:14,269 [base_case.py--&gt;line:118]:用例【登录普通投资用户】状态码断言成功！
+INFO 2021-04-28 20:09:14,269 [base_case.py--&gt;line:140]:用例【登录普通投资用户】请求json结果断言成功！
+INFO 2021-04-28 20:09:14,270 [base_case.py--&gt;line:53]:用例【登录普通投资用户】测试结束&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;
+<br/> -------------------------------Captured log call-------------------------------- <br/>INFO     py38:base_case.py:39 用例【登录普通投资用户】开始测试&gt;&gt;&gt;&gt;&gt;&gt;&gt;
+INFO     py38:base_case.py:118 用例【登录普通投资用户】状态码断言成功！
+INFO     py38:base_case.py:140 用例【登录普通投资用户】请求json结果断言成功！
+INFO     py38:base_case.py:53 用例【登录普通投资用户】测试结束&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;<br/></div></td></tr></tbody>
+      <tbody class="passed results-table-row">
+        <tr>
+          <td class="col-result">Passed</td>
+          <td class="col-name">test_cases/test_invest_flow.py::TestInvestFlow::test_invest_flow_09</td>
+          <td class="col-duration">0.03</td>
+          <td class="col-links"></td></tr>
+        <tr>
+          <td class="extra" colspan="4">
+            <div class="log"> ------------------------------Captured stderr call------------------------------ <br/>INFO 2021-04-28 20:09:14,271 [base_case.py--&gt;line:39]:用例【充值】开始测试&gt;&gt;&gt;&gt;&gt;&gt;&gt;
+INFO 2021-04-28 20:09:14,304 [base_case.py--&gt;line:118]:用例【充值】状态码断言成功！
+INFO 2021-04-28 20:09:14,305 [base_case.py--&gt;line:140]:用例【充值】请求json结果断言成功！
+INFO 2021-04-28 20:09:14,305 [base_case.py--&gt;line:53]:用例【充值】测试结束&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;
+<br/> -------------------------------Captured log call-------------------------------- <br/>INFO     py38:base_case.py:39 用例【充值】开始测试&gt;&gt;&gt;&gt;&gt;&gt;&gt;
+INFO     py38:base_case.py:118 用例【充值】状态码断言成功！
+INFO     py38:base_case.py:140 用例【充值】请求json结果断言成功！
+INFO     py38:base_case.py:53 用例【充值】测试结束&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;<br/></div></td></tr></tbody>
+      <tbody class="passed results-table-row">
+        <tr>
+          <td class="col-result">Passed</td>
+          <td class="col-name">test_cases/test_invest_flow.py::TestInvestFlow::test_invest_flow_10</td>
+          <td class="col-duration">0.03</td>
+          <td class="col-links"></td></tr>
+        <tr>
+          <td class="extra" colspan="4">
+            <div class="log"> ------------------------------Captured stderr call------------------------------ <br/>INFO 2021-04-28 20:09:14,308 [base_case.py--&gt;line:39]:用例【投资项目】开始测试&gt;&gt;&gt;&gt;&gt;&gt;&gt;
+INFO 2021-04-28 20:09:14,345 [base_case.py--&gt;line:118]:用例【投资项目】状态码断言成功！
+INFO 2021-04-28 20:09:14,345 [base_case.py--&gt;line:140]:用例【投资项目】请求json结果断言成功！
+INFO 2021-04-28 20:09:14,345 [base_case.py--&gt;line:53]:用例【投资项目】测试结束&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;
+<br/> -------------------------------Captured log call-------------------------------- <br/>INFO     py38:base_case.py:39 用例【投资项目】开始测试&gt;&gt;&gt;&gt;&gt;&gt;&gt;
+INFO     py38:base_case.py:118 用例【投资项目】状态码断言成功！
+INFO     py38:base_case.py:140 用例【投资项目】请求json结果断言成功！
+INFO     py38:base_case.py:53 用例【投资项目】测试结束&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;<br/> ----------------------------Captured stderr teardown---------------------------- <br/>INFO 2021-04-28 20:09:14,346 [base_case.py--&gt;line:35]:**********投资业务流接口测试结束**********
+<br/> -----------------------------Captured log teardown------------------------------ <br/>INFO     py38:base_case.py:35 **********投资业务流接口测试结束**********<br/></div></td></tr></tbody>
+      <tbody class="passed results-table-row">
+        <tr>
+          <td class="col-result">Passed</td>
+          <td class="col-name">test_cases/test_loan_flow.py::TestLoanFlow::test_01register_normal_loan_user</td>
+          <td class="col-duration">0.29</td>
+          <td class="col-links"></td></tr>
+        <tr>
+          <td class="extra" colspan="4">
+            <div class="log"> -----------------------------Captured stderr setup------------------------------ <br/>INFO 2021-04-28 20:09:14,347 [base_case.py--&gt;line:31]:=========贷款业务流接口开始测试==========
+<br/> -------------------------------Captured log setup------------------------------- <br/>INFO     py38:base_case.py:31 =========贷款业务流接口开始测试==========<br/> ------------------------------Captured stderr call------------------------------ <br/>INFO 2021-04-28 20:09:14,347 [base_case.py--&gt;line:39]:用例【普通投资用户注册】开始测试&gt;&gt;&gt;&gt;&gt;&gt;&gt;
+INFO 2021-04-28 20:09:14,640 [base_case.py--&gt;line:118]:用例【普通投资用户注册】状态码断言成功！
+INFO 2021-04-28 20:09:14,641 [base_case.py--&gt;line:140]:用例【普通投资用户注册】请求json结果断言成功！
+INFO 2021-04-28 20:09:14,641 [base_case.py--&gt;line:53]:用例【普通投资用户注册】测试结束&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;
+<br/> -------------------------------Captured log call-------------------------------- <br/>INFO     py38:base_case.py:39 用例【普通投资用户注册】开始测试&gt;&gt;&gt;&gt;&gt;&gt;&gt;
+INFO     py38:base_case.py:118 用例【普通投资用户注册】状态码断言成功！
+INFO     py38:base_case.py:140 用例【普通投资用户注册】请求json结果断言成功！
+INFO     py38:base_case.py:53 用例【普通投资用户注册】测试结束&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;<br/></div></td></tr></tbody>
+      <tbody class="passed results-table-row">
+        <tr>
+          <td class="col-result">Passed</td>
+          <td class="col-name">test_cases/test_loan_flow.py::TestLoanFlow::test_02login_normal_loan_user</td>
+          <td class="col-duration">0.17</td>
+          <td class="col-links"></td></tr>
+        <tr>
+          <td class="extra" colspan="4">
+            <div class="log"> ------------------------------Captured stderr call------------------------------ <br/>INFO 2021-04-28 20:09:14,643 [base_case.py--&gt;line:39]:用例【普通融资用户登录】开始测试&gt;&gt;&gt;&gt;&gt;&gt;&gt;
+INFO 2021-04-28 20:09:14,815 [base_case.py--&gt;line:118]:用例【普通融资用户登录】状态码断言成功！
+INFO 2021-04-28 20:09:14,816 [base_case.py--&gt;line:140]:用例【普通融资用户登录】请求json结果断言成功！
+INFO 2021-04-28 20:09:14,816 [base_case.py--&gt;line:53]:用例【普通融资用户登录】测试结束&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;
+<br/> -------------------------------Captured log call-------------------------------- <br/>INFO     py38:base_case.py:39 用例【普通融资用户登录】开始测试&gt;&gt;&gt;&gt;&gt;&gt;&gt;
+INFO     py38:base_case.py:118 用例【普通融资用户登录】状态码断言成功！
+INFO     py38:base_case.py:140 用例【普通融资用户登录】请求json结果断言成功！
+INFO     py38:base_case.py:53 用例【普通融资用户登录】测试结束&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;<br/></div></td></tr></tbody>
+      <tbody class="passed results-table-row">
+        <tr>
+          <td class="col-result">Passed</td>
+          <td class="col-name">test_cases/test_loan_flow.py::TestLoanFlow::test_03add_loan</td>
+          <td class="col-duration">0.03</td>
+          <td class="col-links"></td></tr>
+        <tr>
+          <td class="extra" colspan="4">
+            <div class="log"> ------------------------------Captured stderr call------------------------------ <br/>INFO 2021-04-28 20:09:14,818 [base_case.py--&gt;line:39]:用例【添加项目】开始测试&gt;&gt;&gt;&gt;&gt;&gt;&gt;
+INFO 2021-04-28 20:09:14,848 [base_case.py--&gt;line:118]:用例【添加项目】状态码断言成功！
+INFO 2021-04-28 20:09:14,849 [base_case.py--&gt;line:140]:用例【添加项目】请求json结果断言成功！
+INFO 2021-04-28 20:09:14,849 [base_case.py--&gt;line:53]:用例【添加项目】测试结束&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;
+<br/> -------------------------------Captured log call-------------------------------- <br/>INFO     py38:base_case.py:39 用例【添加项目】开始测试&gt;&gt;&gt;&gt;&gt;&gt;&gt;
+INFO     py38:base_case.py:118 用例【添加项目】状态码断言成功！
+INFO     py38:base_case.py:140 用例【添加项目】请求json结果断言成功！
+INFO     py38:base_case.py:53 用例【添加项目】测试结束&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;<br/></div></td></tr></tbody>
+      <tbody class="passed results-table-row">
+        <tr>
+          <td class="col-result">Passed</td>
+          <td class="col-name">test_cases/test_loan_flow.py::TestLoanFlow::test_04register_admin_user</td>
+          <td class="col-duration">0.41</td>
+          <td class="col-links"></td></tr>
+        <tr>
+          <td class="extra" colspan="4">
+            <div class="log"> ------------------------------Captured stderr call------------------------------ <br/>INFO 2021-04-28 20:09:14,851 [base_case.py--&gt;line:39]:用例【注册管理员用户】开始测试&gt;&gt;&gt;&gt;&gt;&gt;&gt;
+INFO 2021-04-28 20:09:15,137 [base_case.py--&gt;line:118]:用例【注册管理员用户】状态码断言成功！
+INFO 2021-04-28 20:09:15,137 [base_case.py--&gt;line:140]:用例【注册管理员用户】请求json结果断言成功！
+INFO 2021-04-28 20:09:15,268 [base_case.py--&gt;line:157]:用例【注册管理员用户】数据库断言成功
+INFO 2021-04-28 20:09:15,268 [base_case.py--&gt;line:53]:用例【注册管理员用户】测试结束&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;
+<br/> -------------------------------Captured log call-------------------------------- <br/>INFO     py38:base_case.py:39 用例【注册管理员用户】开始测试&gt;&gt;&gt;&gt;&gt;&gt;&gt;
+INFO     py38:base_case.py:118 用例【注册管理员用户】状态码断言成功！
+INFO     py38:base_case.py:140 用例【注册管理员用户】请求json结果断言成功！
+INFO     py38:base_case.py:157 用例【注册管理员用户】数据库断言成功
+INFO     py38:base_case.py:53 用例【注册管理员用户】测试结束&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;<br/></div></td></tr></tbody>
+      <tbody class="passed results-table-row">
+        <tr>
+          <td class="col-result">Passed</td>
+          <td class="col-name">test_cases/test_loan_flow.py::TestLoanFlow::test_05login_admin_user</td>
+          <td class="col-duration">0.16</td>
+          <td class="col-links"></td></tr>
+        <tr>
+          <td class="extra" colspan="4">
+            <div class="log"> ------------------------------Captured stderr call------------------------------ <br/>INFO 2021-04-28 20:09:15,270 [base_case.py--&gt;line:39]:用例【管理员用户登录】开始测试&gt;&gt;&gt;&gt;&gt;&gt;&gt;
+INFO 2021-04-28 20:09:15,432 [base_case.py--&gt;line:118]:用例【管理员用户登录】状态码断言成功！
+INFO 2021-04-28 20:09:15,432 [base_case.py--&gt;line:140]:用例【管理员用户登录】请求json结果断言成功！
+INFO 2021-04-28 20:09:15,432 [base_case.py--&gt;line:53]:用例【管理员用户登录】测试结束&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;
+<br/> -------------------------------Captured log call-------------------------------- <br/>INFO     py38:base_case.py:39 用例【管理员用户登录】开始测试&gt;&gt;&gt;&gt;&gt;&gt;&gt;
+INFO     py38:base_case.py:118 用例【管理员用户登录】状态码断言成功！
+INFO     py38:base_case.py:140 用例【管理员用户登录】请求json结果断言成功！
+INFO     py38:base_case.py:53 用例【管理员用户登录】测试结束&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;<br/></div></td></tr></tbody>
+      <tbody class="passed results-table-row">
+        <tr>
+          <td class="col-result">Passed</td>
+          <td class="col-name">test_cases/test_loan_flow.py::TestLoanFlow::test_06audit_loan</td>
+          <td class="col-duration">0.03</td>
+          <td class="col-links"></td></tr>
+        <tr>
+          <td class="extra" colspan="4">
+            <div class="log"> ------------------------------Captured stderr call------------------------------ <br/>INFO 2021-04-28 20:09:15,434 [base_case.py--&gt;line:39]:用例【审核项目】开始测试&gt;&gt;&gt;&gt;&gt;&gt;&gt;
+INFO 2021-04-28 20:09:15,463 [base_case.py--&gt;line:118]:用例【审核项目】状态码断言成功！
+INFO 2021-04-28 20:09:15,464 [base_case.py--&gt;line:140]:用例【审核项目】请求json结果断言成功！
+INFO 2021-04-28 20:09:15,464 [base_case.py--&gt;line:53]:用例【审核项目】测试结束&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;
+<br/> -------------------------------Captured log call-------------------------------- <br/>INFO     py38:base_case.py:39 用例【审核项目】开始测试&gt;&gt;&gt;&gt;&gt;&gt;&gt;
+INFO     py38:base_case.py:118 用例【审核项目】状态码断言成功！
+INFO     py38:base_case.py:140 用例【审核项目】请求json结果断言成功！
+INFO     py38:base_case.py:53 用例【审核项目】测试结束&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;<br/> ----------------------------Captured stderr teardown---------------------------- <br/>INFO 2021-04-28 20:09:15,465 [base_case.py--&gt;line:35]:**********贷款业务流接口测试结束**********
+<br/> -----------------------------Captured log teardown------------------------------ <br/>INFO     py38:base_case.py:35 **********贷款业务流接口测试结束**********<br/></div></td></tr></tbody>
+      <tbody class="passed results-table-row">
+        <tr>
+          <td class="col-result">Passed</td>
+          <td class="col-name">test_cases/test_recharge.py::TestRecharge::test_recharge_01</td>
+          <td class="col-duration">0.64</td>
+          <td class="col-links"></td></tr>
+        <tr>
+          <td class="extra" colspan="4">
+            <div class="log"> -----------------------------Captured stderr setup------------------------------ <br/>INFO 2021-04-28 20:09:15,467 [test_recharge.py--&gt;line:25]:=========充值接口开始测试==========
+INFO 2021-04-28 20:09:15,769 [fixture.py--&gt;line:36]:注册用户成功
+INFO 2021-04-28 20:09:15,770 [test_recharge.py--&gt;line:33]:注册用户15829266196成功
+INFO 2021-04-28 20:09:16,049 [fixture.py--&gt;line:61]:登录用户成功
+<br/> -------------------------------Captured log setup------------------------------- <br/>INFO     py38:test_recharge.py:25 =========充值接口开始测试==========
+INFO     py38:fixture.py:36 注册用户成功
+INFO     py38:test_recharge.py:33 注册用户15829266196成功
+INFO     py38:fixture.py:61 登录用户成功<br/> ------------------------------Captured stderr call------------------------------ <br/>INFO 2021-04-28 20:09:16,050 [base_case.py--&gt;line:39]:用例【充值成功-整数】开始测试&gt;&gt;&gt;&gt;&gt;&gt;&gt;
+INFO 2021-04-28 20:09:16,082 [base_case.py--&gt;line:118]:用例【充值成功-整数】状态码断言成功！
+INFO 2021-04-28 20:09:16,082 [base_case.py--&gt;line:140]:用例【充值成功-整数】请求json结果断言成功！
+INFO 2021-04-28 20:09:16,106 [base_case.py--&gt;line:157]:用例【充值成功-整数】数据库断言成功
+INFO 2021-04-28 20:09:16,106 [base_case.py--&gt;line:53]:用例【充值成功-整数】测试结束&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;
+<br/> -------------------------------Captured log call-------------------------------- <br/>INFO     py38:base_case.py:39 用例【充值成功-整数】开始测试&gt;&gt;&gt;&gt;&gt;&gt;&gt;
+INFO     py38:base_case.py:118 用例【充值成功-整数】状态码断言成功！
+INFO     py38:base_case.py:140 用例【充值成功-整数】请求json结果断言成功！
+INFO     py38:base_case.py:157 用例【充值成功-整数】数据库断言成功
+INFO     py38:base_case.py:53 用例【充值成功-整数】测试结束&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;<br/></div></td></tr></tbody>
+      <tbody class="passed results-table-row">
+        <tr>
+          <td class="col-result">Passed</td>
+          <td class="col-name">test_cases/test_recharge.py::TestRecharge::test_recharge_02</td>
+          <td class="col-duration">0.06</td>
+          <td class="col-links"></td></tr>
+        <tr>
+          <td class="extra" colspan="4">
+            <div class="log"> ------------------------------Captured stderr call------------------------------ <br/>INFO 2021-04-28 20:09:16,111 [base_case.py--&gt;line:39]:用例【充值成功-1位小数】开始测试&gt;&gt;&gt;&gt;&gt;&gt;&gt;
+INFO 2021-04-28 20:09:16,145 [base_case.py--&gt;line:118]:用例【充值成功-1位小数】状态码断言成功！
+INFO 2021-04-28 20:09:16,146 [base_case.py--&gt;line:140]:用例【充值成功-1位小数】请求json结果断言成功！
+INFO 2021-04-28 20:09:16,170 [base_case.py--&gt;line:157]:用例【充值成功-1位小数】数据库断言成功
+INFO 2021-04-28 20:09:16,170 [base_case.py--&gt;line:53]:用例【充值成功-1位小数】测试结束&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;
+<br/> -------------------------------Captured log call-------------------------------- <br/>INFO     py38:base_case.py:39 用例【充值成功-1位小数】开始测试&gt;&gt;&gt;&gt;&gt;&gt;&gt;
+INFO     py38:base_case.py:118 用例【充值成功-1位小数】状态码断言成功！
+INFO     py38:base_case.py:140 用例【充值成功-1位小数】请求json结果断言成功！
+INFO     py38:base_case.py:157 用例【充值成功-1位小数】数据库断言成功
+INFO     py38:base_case.py:53 用例【充值成功-1位小数】测试结束&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;<br/></div></td></tr></tbody>
+      <tbody class="passed results-table-row">
+        <tr>
+          <td class="col-result">Passed</td>
+          <td class="col-name">test_cases/test_recharge.py::TestRecharge::test_recharge_03</td>
+          <td class="col-duration">0.06</td>
+          <td class="col-links"></td></tr>
+        <tr>
+          <td class="extra" colspan="4">
+            <div class="log"> ------------------------------Captured stderr call------------------------------ <br/>INFO 2021-04-28 20:09:16,172 [base_case.py--&gt;line:39]:用例【充值成功-2位小数】开始测试&gt;&gt;&gt;&gt;&gt;&gt;&gt;
+INFO 2021-04-28 20:09:16,206 [base_case.py--&gt;line:118]:用例【充值成功-2位小数】状态码断言成功！
+INFO 2021-04-28 20:09:16,207 [base_case.py--&gt;line:140]:用例【充值成功-2位小数】请求json结果断言成功！
+INFO 2021-04-28 20:09:16,230 [base_case.py--&gt;line:157]:用例【充值成功-2位小数】数据库断言成功
+INFO 2021-04-28 20:09:16,231 [base_case.py--&gt;line:53]:用例【充值成功-2位小数】测试结束&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;
+<br/> -------------------------------Captured log call-------------------------------- <br/>INFO     py38:base_case.py:39 用例【充值成功-2位小数】开始测试&gt;&gt;&gt;&gt;&gt;&gt;&gt;
+INFO     py38:base_case.py:118 用例【充值成功-2位小数】状态码断言成功！
+INFO     py38:base_case.py:140 用例【充值成功-2位小数】请求json结果断言成功！
+INFO     py38:base_case.py:157 用例【充值成功-2位小数】数据库断言成功
+INFO     py38:base_case.py:53 用例【充值成功-2位小数】测试结束&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;<br/></div></td></tr></tbody>
+      <tbody class="passed results-table-row">
+        <tr>
+          <td class="col-result">Passed</td>
+          <td class="col-name">test_cases/test_recharge.py::TestRecharge::test_recharge_04</td>
+          <td class="col-duration">0.06</td>
+          <td class="col-links"></td></tr>
+        <tr>
+          <td class="extra" colspan="4">
+            <div class="log"> ------------------------------Captured stderr call------------------------------ <br/>INFO 2021-04-28 20:09:16,233 [base_case.py--&gt;line:39]:用例【充值成功-50万】开始测试&gt;&gt;&gt;&gt;&gt;&gt;&gt;
+INFO 2021-04-28 20:09:16,265 [base_case.py--&gt;line:118]:用例【充值成功-50万】状态码断言成功！
+INFO 2021-04-28 20:09:16,266 [base_case.py--&gt;line:140]:用例【充值成功-50万】请求json结果断言成功！
+INFO 2021-04-28 20:09:16,291 [base_case.py--&gt;line:157]:用例【充值成功-50万】数据库断言成功
+INFO 2021-04-28 20:09:16,291 [base_case.py--&gt;line:53]:用例【充值成功-50万】测试结束&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;
+<br/> -------------------------------Captured log call-------------------------------- <br/>INFO     py38:base_case.py:39 用例【充值成功-50万】开始测试&gt;&gt;&gt;&gt;&gt;&gt;&gt;
+INFO     py38:base_case.py:118 用例【充值成功-50万】状态码断言成功！
+INFO     py38:base_case.py:140 用例【充值成功-50万】请求json结果断言成功！
+INFO     py38:base_case.py:157 用例【充值成功-50万】数据库断言成功
+INFO     py38:base_case.py:53 用例【充值成功-50万】测试结束&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;<br/></div></td></tr></tbody>
+      <tbody class="passed results-table-row">
+        <tr>
+          <td class="col-result">Passed</td>
+          <td class="col-name">test_cases/test_recharge.py::TestRecharge::test_recharge_05</td>
+          <td class="col-duration">0.03</td>
+          <td class="col-links"></td></tr>
+        <tr>
+          <td class="extra" colspan="4">
+            <div class="log"> ------------------------------Captured stderr call------------------------------ <br/>INFO 2021-04-28 20:09:16,298 [base_case.py--&gt;line:39]:用例【会员id位空】开始测试&gt;&gt;&gt;&gt;&gt;&gt;&gt;
+INFO 2021-04-28 20:09:16,327 [base_case.py--&gt;line:118]:用例【会员id位空】状态码断言成功！
+INFO 2021-04-28 20:09:16,327 [base_case.py--&gt;line:140]:用例【会员id位空】请求json结果断言成功！
+INFO 2021-04-28 20:09:16,327 [base_case.py--&gt;line:53]:用例【会员id位空】测试结束&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;
+<br/> -------------------------------Captured log call-------------------------------- <br/>INFO     py38:base_case.py:39 用例【会员id位空】开始测试&gt;&gt;&gt;&gt;&gt;&gt;&gt;
+INFO     py38:base_case.py:118 用例【会员id位空】状态码断言成功！
+INFO     py38:base_case.py:140 用例【会员id位空】请求json结果断言成功！
+INFO     py38:base_case.py:53 用例【会员id位空】测试结束&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;<br/></div></td></tr></tbody>
+      <tbody class="passed results-table-row">
+        <tr>
+          <td class="col-result">Passed</td>
+          <td class="col-name">test_cases/test_recharge.py::TestRecharge::test_recharge_06</td>
+          <td class="col-duration">0.02</td>
+          <td class="col-links"></td></tr>
+        <tr>
+          <td class="extra" colspan="4">
+            <div class="log"> ------------------------------Captured stderr call------------------------------ <br/>INFO 2021-04-28 20:09:16,329 [base_case.py--&gt;line:39]:用例【id不是当前登陆的用户】开始测试&gt;&gt;&gt;&gt;&gt;&gt;&gt;
+INFO 2021-04-28 20:09:16,356 [base_case.py--&gt;line:118]:用例【id不是当前登陆的用户】状态码断言成功！
+INFO 2021-04-28 20:09:16,356 [base_case.py--&gt;line:140]:用例【id不是当前登陆的用户】请求json结果断言成功！
+INFO 2021-04-28 20:09:16,356 [base_case.py--&gt;line:53]:用例【id不是当前登陆的用户】测试结束&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;
+<br/> -------------------------------Captured log call-------------------------------- <br/>INFO     py38:base_case.py:39 用例【id不是当前登陆的用户】开始测试&gt;&gt;&gt;&gt;&gt;&gt;&gt;
+INFO     py38:base_case.py:118 用例【id不是当前登陆的用户】状态码断言成功！
+INFO     py38:base_case.py:140 用例【id不是当前登陆的用户】请求json结果断言成功！
+INFO     py38:base_case.py:53 用例【id不是当前登陆的用户】测试结束&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;<br/></div></td></tr></tbody>
+      <tbody class="passed results-table-row">
+        <tr>
+          <td class="col-result">Passed</td>
+          <td class="col-name">test_cases/test_recharge.py::TestRecharge::test_recharge_08</td>
+          <td class="col-duration">0.02</td>
+          <td class="col-links"></td></tr>
+        <tr>
+          <td class="extra" colspan="4">
+            <div class="log"> ------------------------------Captured stderr call------------------------------ <br/>INFO 2021-04-28 20:09:16,404 [base_case.py--&gt;line:39]:用例【会员id位小数】开始测试&gt;&gt;&gt;&gt;&gt;&gt;&gt;
+INFO 2021-04-28 20:09:16,432 [base_case.py--&gt;line:118]:用例【会员id位小数】状态码断言成功！
+INFO 2021-04-28 20:09:16,432 [base_case.py--&gt;line:140]:用例【会员id位小数】请求json结果断言成功！
+INFO 2021-04-28 20:09:16,432 [base_case.py--&gt;line:53]:用例【会员id位小数】测试结束&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;
+<br/> -------------------------------Captured log call-------------------------------- <br/>INFO     py38:base_case.py:39 用例【会员id位小数】开始测试&gt;&gt;&gt;&gt;&gt;&gt;&gt;
+INFO     py38:base_case.py:118 用例【会员id位小数】状态码断言成功！
+INFO     py38:base_case.py:140 用例【会员id位小数】请求json结果断言成功！
+INFO     py38:base_case.py:53 用例【会员id位小数】测试结束&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;<br/></div></td></tr></tbody>
+      <tbody class="passed results-table-row">
+        <tr>
+          <td class="col-result">Passed</td>
+          <td class="col-name">test_cases/test_recharge.py::TestRecharge::test_recharge_10</td>
+          <td class="col-duration">0.02</td>
+          <td class="col-links"></td></tr>
+        <tr>
+          <td class="extra" colspan="4">
+            <div class="log"> ------------------------------Captured stderr call------------------------------ <br/>INFO 2021-04-28 20:09:16,484 [base_case.py--&gt;line:39]:用例【充值金额为负数】开始测试&gt;&gt;&gt;&gt;&gt;&gt;&gt;
+INFO 2021-04-28 20:09:16,512 [base_case.py--&gt;line:118]:用例【充值金额为负数】状态码断言成功！
+INFO 2021-04-28 20:09:16,513 [base_case.py--&gt;line:140]:用例【充值金额为负数】请求json结果断言成功！
+INFO 2021-04-28 20:09:16,513 [base_case.py--&gt;line:53]:用例【充值金额为负数】测试结束&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;
+<br/> -------------------------------Captured log call-------------------------------- <br/>INFO     py38:base_case.py:39 用例【充值金额为负数】开始测试&gt;&gt;&gt;&gt;&gt;&gt;&gt;
+INFO     py38:base_case.py:118 用例【充值金额为负数】状态码断言成功！
+INFO     py38:base_case.py:140 用例【充值金额为负数】请求json结果断言成功！
+INFO     py38:base_case.py:53 用例【充值金额为负数】测试结束&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;<br/></div></td></tr></tbody>
+      <tbody class="passed results-table-row">
+        <tr>
+          <td class="col-result">Passed</td>
+          <td class="col-name">test_cases/test_recharge.py::TestRecharge::test_recharge_11</td>
+          <td class="col-duration">0.02</td>
+          <td class="col-links"></td></tr>
+        <tr>
+          <td class="extra" colspan="4">
+            <div class="log"> ------------------------------Captured stderr call------------------------------ <br/>INFO 2021-04-28 20:09:16,515 [base_case.py--&gt;line:39]:用例【充值金额为空】开始测试&gt;&gt;&gt;&gt;&gt;&gt;&gt;
+INFO 2021-04-28 20:09:16,543 [base_case.py--&gt;line:118]:用例【充值金额为空】状态码断言成功！
+INFO 2021-04-28 20:09:16,543 [base_case.py--&gt;line:140]:用例【充值金额为空】请求json结果断言成功！
+INFO 2021-04-28 20:09:16,543 [base_case.py--&gt;line:53]:用例【充值金额为空】测试结束&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;
+<br/> -------------------------------Captured log call-------------------------------- <br/>INFO     py38:base_case.py:39 用例【充值金额为空】开始测试&gt;&gt;&gt;&gt;&gt;&gt;&gt;
+INFO     py38:base_case.py:118 用例【充值金额为空】状态码断言成功！
+INFO     py38:base_case.py:140 用例【充值金额为空】请求json结果断言成功！
+INFO     py38:base_case.py:53 用例【充值金额为空】测试结束&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;<br/></div></td></tr></tbody>
+      <tbody class="passed results-table-row">
+        <tr>
+          <td class="col-result">Passed</td>
+          <td class="col-name">test_cases/test_recharge.py::TestRecharge::test_recharge_12</td>
+          <td class="col-duration">0.02</td>
+          <td class="col-links"></td></tr>
+        <tr>
+          <td class="extra" colspan="4">
+            <div class="log"> ------------------------------Captured stderr call------------------------------ <br/>INFO 2021-04-28 20:09:16,545 [base_case.py--&gt;line:39]:用例【充值金额3位小数】开始测试&gt;&gt;&gt;&gt;&gt;&gt;&gt;
+INFO 2021-04-28 20:09:16,572 [base_case.py--&gt;line:118]:用例【充值金额3位小数】状态码断言成功！
+INFO 2021-04-28 20:09:16,573 [base_case.py--&gt;line:140]:用例【充值金额3位小数】请求json结果断言成功！
+INFO 2021-04-28 20:09:16,573 [base_case.py--&gt;line:53]:用例【充值金额3位小数】测试结束&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;
+<br/> -------------------------------Captured log call-------------------------------- <br/>INFO     py38:base_case.py:39 用例【充值金额3位小数】开始测试&gt;&gt;&gt;&gt;&gt;&gt;&gt;
+INFO     py38:base_case.py:118 用例【充值金额3位小数】状态码断言成功！
+INFO     py38:base_case.py:140 用例【充值金额3位小数】请求json结果断言成功！
+INFO     py38:base_case.py:53 用例【充值金额3位小数】测试结束&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;<br/></div></td></tr></tbody>
+      <tbody class="passed results-table-row">
+        <tr>
+          <td class="col-result">Passed</td>
+          <td class="col-name">test_cases/test_recharge.py::TestRecharge::test_recharge_13</td>
+          <td class="col-duration">0.02</td>
+          <td class="col-links"></td></tr>
+        <tr>
+          <td class="extra" colspan="4">
+            <div class="log"> ------------------------------Captured stderr call------------------------------ <br/>INFO 2021-04-28 20:09:16,575 [base_case.py--&gt;line:39]:用例【充值金额大于50万】开始测试&gt;&gt;&gt;&gt;&gt;&gt;&gt;
+INFO 2021-04-28 20:09:16,604 [base_case.py--&gt;line:118]:用例【充值金额大于50万】状态码断言成功！
+INFO 2021-04-28 20:09:16,604 [base_case.py--&gt;line:140]:用例【充值金额大于50万】请求json结果断言成功！
+INFO 2021-04-28 20:09:16,604 [base_case.py--&gt;line:53]:用例【充值金额大于50万】测试结束&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;
+<br/> -------------------------------Captured log call-------------------------------- <br/>INFO     py38:base_case.py:39 用例【充值金额大于50万】开始测试&gt;&gt;&gt;&gt;&gt;&gt;&gt;
+INFO     py38:base_case.py:118 用例【充值金额大于50万】状态码断言成功！
+INFO     py38:base_case.py:140 用例【充值金额大于50万】请求json结果断言成功！
+INFO     py38:base_case.py:53 用例【充值金额大于50万】测试结束&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;<br/></div></td></tr></tbody>
+      <tbody class="passed results-table-row">
+        <tr>
+          <td class="col-result">Passed</td>
+          <td class="col-name">test_cases/test_recharge.py::TestRecharge::test_recharge_14</td>
+          <td class="col-duration">0.02</td>
+          <td class="col-links"></td></tr>
+        <tr>
+          <td class="extra" colspan="4">
+            <div class="log"> ------------------------------Captured stderr call------------------------------ <br/>INFO 2021-04-28 20:09:16,606 [base_case.py--&gt;line:39]:用例【充值金额非数字】开始测试&gt;&gt;&gt;&gt;&gt;&gt;&gt;
+INFO 2021-04-28 20:09:16,633 [base_case.py--&gt;line:118]:用例【充值金额非数字】状态码断言成功！
+INFO 2021-04-28 20:09:16,633 [base_case.py--&gt;line:140]:用例【充值金额非数字】请求json结果断言成功！
+INFO 2021-04-28 20:09:16,633 [base_case.py--&gt;line:53]:用例【充值金额非数字】测试结束&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;
+<br/> -------------------------------Captured log call-------------------------------- <br/>INFO     py38:base_case.py:39 用例【充值金额非数字】开始测试&gt;&gt;&gt;&gt;&gt;&gt;&gt;
+INFO     py38:base_case.py:118 用例【充值金额非数字】状态码断言成功！
+INFO     py38:base_case.py:140 用例【充值金额非数字】请求json结果断言成功！
+INFO     py38:base_case.py:53 用例【充值金额非数字】测试结束&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;<br/> ----------------------------Captured stderr teardown---------------------------- <br/>INFO 2021-04-28 20:09:16,634 [base_case.py--&gt;line:35]:**********充值接口测试结束**********
+<br/> -----------------------------Captured log teardown------------------------------ <br/>INFO     py38:base_case.py:35 **********充值接口测试结束**********<br/></div></td></tr></tbody>
+      <tbody class="passed results-table-row">
+        <tr>
+          <td class="col-result">Passed</td>
+          <td class="col-name">test_cases/test_register.py::TestRegister::test_register_01</td>
+          <td class="col-duration">0.42</td>
+          <td class="col-links"></td></tr>
+        <tr>
+          <td class="extra" colspan="4">
+            <div class="log"> -----------------------------Captured stderr setup------------------------------ <br/>INFO 2021-04-28 20:09:16,636 [base_case.py--&gt;line:31]:=========注册接口开始测试==========
+<br/> -------------------------------Captured log setup------------------------------- <br/>INFO     py38:base_case.py:31 =========注册接口开始测试==========<br/> ------------------------------Captured stderr call------------------------------ <br/>INFO 2021-04-28 20:09:16,636 [base_case.py--&gt;line:39]:用例【注册成功-不带昵称和类型】开始测试&gt;&gt;&gt;&gt;&gt;&gt;&gt;
+INFO 2021-04-28 20:09:16,929 [base_case.py--&gt;line:118]:用例【注册成功-不带昵称和类型】状态码断言成功！
+INFO 2021-04-28 20:09:16,930 [base_case.py--&gt;line:140]:用例【注册成功-不带昵称和类型】请求json结果断言成功！
+INFO 2021-04-28 20:09:17,055 [base_case.py--&gt;line:157]:用例【注册成功-不带昵称和类型】数据库断言成功
+INFO 2021-04-28 20:09:17,055 [base_case.py--&gt;line:53]:用例【注册成功-不带昵称和类型】测试结束&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;
+<br/> -------------------------------Captured log call-------------------------------- <br/>INFO     py38:base_case.py:39 用例【注册成功-不带昵称和类型】开始测试&gt;&gt;&gt;&gt;&gt;&gt;&gt;
+INFO     py38:base_case.py:118 用例【注册成功-不带昵称和类型】状态码断言成功！
+INFO     py38:base_case.py:140 用例【注册成功-不带昵称和类型】请求json结果断言成功！
+INFO     py38:base_case.py:157 用例【注册成功-不带昵称和类型】数据库断言成功
+INFO     py38:base_case.py:53 用例【注册成功-不带昵称和类型】测试结束&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;<br/></div></td></tr></tbody>
+      <tbody class="passed results-table-row">
+        <tr>
+          <td class="col-result">Passed</td>
+          <td class="col-name">test_cases/test_register.py::TestRegister::test_register_02</td>
+          <td class="col-duration">0.41</td>
+          <td class="col-links"></td></tr>
+        <tr>
+          <td class="extra" colspan="4">
+            <div class="log"> ------------------------------Captured stderr call------------------------------ <br/>INFO 2021-04-28 20:09:17,057 [base_case.py--&gt;line:39]:用例【注册成功-带昵称-类型为0】开始测试&gt;&gt;&gt;&gt;&gt;&gt;&gt;
+INFO 2021-04-28 20:09:17,341 [base_case.py--&gt;line:118]:用例【注册成功-带昵称-类型为0】状态码断言成功！
+INFO 2021-04-28 20:09:17,342 [base_case.py--&gt;line:140]:用例【注册成功-带昵称-类型为0】请求json结果断言成功！
+INFO 2021-04-28 20:09:17,466 [base_case.py--&gt;line:157]:用例【注册成功-带昵称-类型为0】数据库断言成功
+INFO 2021-04-28 20:09:17,467 [base_case.py--&gt;line:53]:用例【注册成功-带昵称-类型为0】测试结束&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;
+<br/> -------------------------------Captured log call-------------------------------- <br/>INFO     py38:base_case.py:39 用例【注册成功-带昵称-类型为0】开始测试&gt;&gt;&gt;&gt;&gt;&gt;&gt;
+INFO     py38:base_case.py:118 用例【注册成功-带昵称-类型为0】状态码断言成功！
+INFO     py38:base_case.py:140 用例【注册成功-带昵称-类型为0】请求json结果断言成功！
+INFO     py38:base_case.py:157 用例【注册成功-带昵称-类型为0】数据库断言成功
+INFO     py38:base_case.py:53 用例【注册成功-带昵称-类型为0】测试结束&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;<br/></div></td></tr></tbody>
+      <tbody class="passed results-table-row">
+        <tr>
+          <td class="col-result">Passed</td>
+          <td class="col-name">test_cases/test_register.py::TestRegister::test_register_03</td>
+          <td class="col-duration">0.44</td>
+          <td class="col-links"></td></tr>
+        <tr>
+          <td class="extra" colspan="4">
+            <div class="log"> ------------------------------Captured stderr call------------------------------ <br/>INFO 2021-04-28 20:09:17,469 [base_case.py--&gt;line:39]:用例【注册成功-不带昵称-类型为1】开始测试&gt;&gt;&gt;&gt;&gt;&gt;&gt;
+INFO 2021-04-28 20:09:17,778 [base_case.py--&gt;line:118]:用例【注册成功-不带昵称-类型为1】状态码断言成功！
+INFO 2021-04-28 20:09:17,778 [base_case.py--&gt;line:140]:用例【注册成功-不带昵称-类型为1】请求json结果断言成功！
+INFO 2021-04-28 20:09:17,917 [base_case.py--&gt;line:157]:用例【注册成功-不带昵称-类型为1】数据库断言成功
+INFO 2021-04-28 20:09:17,917 [base_case.py--&gt;line:53]:用例【注册成功-不带昵称-类型为1】测试结束&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;
+<br/> -------------------------------Captured log call-------------------------------- <br/>INFO     py38:base_case.py:39 用例【注册成功-不带昵称-类型为1】开始测试&gt;&gt;&gt;&gt;&gt;&gt;&gt;
+INFO     py38:base_case.py:118 用例【注册成功-不带昵称-类型为1】状态码断言成功！
+INFO     py38:base_case.py:140 用例【注册成功-不带昵称-类型为1】请求json结果断言成功！
+INFO     py38:base_case.py:157 用例【注册成功-不带昵称-类型为1】数据库断言成功
+INFO     py38:base_case.py:53 用例【注册成功-不带昵称-类型为1】测试结束&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;<br/></div></td></tr></tbody>
+      <tbody class="passed results-table-row">
+        <tr>
+          <td class="col-result">Passed</td>
+          <td class="col-name">test_cases/test_register.py::TestRegister::test_register_04</td>
+          <td class="col-duration">0.02</td>
+          <td class="col-links"></td></tr>
+        <tr>
+          <td class="extra" colspan="4">
+            <div class="log"> ------------------------------Captured stderr call------------------------------ <br/>INFO 2021-04-28 20:09:17,918 [base_case.py--&gt;line:39]:用例【不输入手机号】开始测试&gt;&gt;&gt;&gt;&gt;&gt;&gt;
+INFO 2021-04-28 20:09:17,946 [base_case.py--&gt;line:118]:用例【不输入手机号】状态码断言成功！
+INFO 2021-04-28 20:09:17,946 [base_case.py--&gt;line:140]:用例【不输入手机号】请求json结果断言成功！
+INFO 2021-04-28 20:09:17,946 [base_case.py--&gt;line:53]:用例【不输入手机号】测试结束&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;
+<br/> -------------------------------Captured log call-------------------------------- <br/>INFO     py38:base_case.py:39 用例【不输入手机号】开始测试&gt;&gt;&gt;&gt;&gt;&gt;&gt;
+INFO     py38:base_case.py:118 用例【不输入手机号】状态码断言成功！
+INFO     py38:base_case.py:140 用例【不输入手机号】请求json结果断言成功！
+INFO     py38:base_case.py:53 用例【不输入手机号】测试结束&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;<br/></div></td></tr></tbody>
+      <tbody class="passed results-table-row">
+        <tr>
+          <td class="col-result">Passed</td>
+          <td class="col-name">test_cases/test_register.py::TestRegister::test_register_05</td>
+          <td class="col-duration">0.03</td>
+          <td class="col-links"></td></tr>
+        <tr>
+          <td class="extra" colspan="4">
+            <div class="log"> ------------------------------Captured stderr call------------------------------ <br/>INFO 2021-04-28 20:09:17,950 [base_case.py--&gt;line:39]:用例【手机号长度10位】开始测试&gt;&gt;&gt;&gt;&gt;&gt;&gt;
+INFO 2021-04-28 20:09:17,980 [base_case.py--&gt;line:118]:用例【手机号长度10位】状态码断言成功！
+INFO 2021-04-28 20:09:17,980 [base_case.py--&gt;line:140]:用例【手机号长度10位】请求json结果断言成功！
+INFO 2021-04-28 20:09:17,981 [base_case.py--&gt;line:53]:用例【手机号长度10位】测试结束&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;
+<br/> -------------------------------Captured log call-------------------------------- <br/>INFO     py38:base_case.py:39 用例【手机号长度10位】开始测试&gt;&gt;&gt;&gt;&gt;&gt;&gt;
+INFO     py38:base_case.py:118 用例【手机号长度10位】状态码断言成功！
+INFO     py38:base_case.py:140 用例【手机号长度10位】请求json结果断言成功！
+INFO     py38:base_case.py:53 用例【手机号长度10位】测试结束&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;<br/></div></td></tr></tbody>
+      <tbody class="passed results-table-row">
+        <tr>
+          <td class="col-result">Passed</td>
+          <td class="col-name">test_cases/test_register.py::TestRegister::test_register_06</td>
+          <td class="col-duration">0.02</td>
+          <td class="col-links"></td></tr>
+        <tr>
+          <td class="extra" colspan="4">
+            <div class="log"> ------------------------------Captured stderr call------------------------------ <br/>INFO 2021-04-28 20:09:17,982 [base_case.py--&gt;line:39]:用例【手机号长度12位】开始测试&gt;&gt;&gt;&gt;&gt;&gt;&gt;
+INFO 2021-04-28 20:09:18,009 [base_case.py--&gt;line:118]:用例【手机号长度12位】状态码断言成功！
+INFO 2021-04-28 20:09:18,009 [base_case.py--&gt;line:140]:用例【手机号长度12位】请求json结果断言成功！
+INFO 2021-04-28 20:09:18,009 [base_case.py--&gt;line:53]:用例【手机号长度12位】测试结束&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;
+<br/> -------------------------------Captured log call-------------------------------- <br/>INFO     py38:base_case.py:39 用例【手机号长度12位】开始测试&gt;&gt;&gt;&gt;&gt;&gt;&gt;
+INFO     py38:base_case.py:118 用例【手机号长度12位】状态码断言成功！
+INFO     py38:base_case.py:140 用例【手机号长度12位】请求json结果断言成功！
+INFO     py38:base_case.py:53 用例【手机号长度12位】测试结束&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;<br/></div></td></tr></tbody>
+      <tbody class="passed results-table-row">
+        <tr>
+          <td class="col-result">Passed</td>
+          <td class="col-name">test_cases/test_register.py::TestRegister::test_register_07</td>
+          <td class="col-duration">0.02</td>
+          <td class="col-links"></td></tr>
+        <tr>
+          <td class="extra" colspan="4">
+            <div class="log"> ------------------------------Captured stderr call------------------------------ <br/>INFO 2021-04-28 20:09:18,011 [base_case.py--&gt;line:39]:用例【手机号含有非法字符】开始测试&gt;&gt;&gt;&gt;&gt;&gt;&gt;
+INFO 2021-04-28 20:09:18,038 [base_case.py--&gt;line:118]:用例【手机号含有非法字符】状态码断言成功！
+INFO 2021-04-28 20:09:18,039 [base_case.py--&gt;line:140]:用例【手机号含有非法字符】请求json结果断言成功！
+INFO 2021-04-28 20:09:18,039 [base_case.py--&gt;line:53]:用例【手机号含有非法字符】测试结束&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;
+<br/> -------------------------------Captured log call-------------------------------- <br/>INFO     py38:base_case.py:39 用例【手机号含有非法字符】开始测试&gt;&gt;&gt;&gt;&gt;&gt;&gt;
+INFO     py38:base_case.py:118 用例【手机号含有非法字符】状态码断言成功！
+INFO     py38:base_case.py:140 用例【手机号含有非法字符】请求json结果断言成功！
+INFO     py38:base_case.py:53 用例【手机号含有非法字符】测试结束&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;<br/></div></td></tr></tbody>
+      <tbody class="passed results-table-row">
+        <tr>
+          <td class="col-result">Passed</td>
+          <td class="col-name">test_cases/test_register.py::TestRegister::test_register_08</td>
+          <td class="col-duration">0.23</td>
+          <td class="col-links"></td></tr>
+        <tr>
+          <td class="extra" colspan="4">
+            <div class="log"> ------------------------------Captured stderr call------------------------------ <br/>INFO 2021-04-28 20:09:18,041 [base_case.py--&gt;line:39]:用例【已注册过的手机号】开始测试&gt;&gt;&gt;&gt;&gt;&gt;&gt;
+INFO 2021-04-28 20:09:18,272 [base_case.py--&gt;line:118]:用例【已注册过的手机号】状态码断言成功！
+INFO 2021-04-28 20:09:18,273 [base_case.py--&gt;line:140]:用例【已注册过的手机号】请求json结果断言成功！
+INFO 2021-04-28 20:09:18,273 [base_case.py--&gt;line:53]:用例【已注册过的手机号】测试结束&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;
+<br/> -------------------------------Captured log call-------------------------------- <br/>INFO     py38:base_case.py:39 用例【已注册过的手机号】开始测试&gt;&gt;&gt;&gt;&gt;&gt;&gt;
+INFO     py38:base_case.py:118 用例【已注册过的手机号】状态码断言成功！
+INFO     py38:base_case.py:140 用例【已注册过的手机号】请求json结果断言成功！
+INFO     py38:base_case.py:53 用例【已注册过的手机号】测试结束&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;<br/></div></td></tr></tbody>
+      <tbody class="passed results-table-row">
+        <tr>
+          <td class="col-result">Passed</td>
+          <td class="col-name">test_cases/test_register.py::TestRegister::test_register_09</td>
+          <td class="col-duration">0.03</td>
+          <td class="col-links"></td></tr>
+        <tr>
+          <td class="extra" colspan="4">
+            <div class="log"> ------------------------------Captured stderr call------------------------------ <br/>INFO 2021-04-28 20:09:18,275 [base_case.py--&gt;line:39]:用例【密码7位】开始测试&gt;&gt;&gt;&gt;&gt;&gt;&gt;
+INFO 2021-04-28 20:09:18,305 [base_case.py--&gt;line:118]:用例【密码7位】状态码断言成功！
+INFO 2021-04-28 20:09:18,306 [base_case.py--&gt;line:140]:用例【密码7位】请求json结果断言成功！
+INFO 2021-04-28 20:09:18,306 [base_case.py--&gt;line:53]:用例【密码7位】测试结束&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;
+<br/> -------------------------------Captured log call-------------------------------- <br/>INFO     py38:base_case.py:39 用例【密码7位】开始测试&gt;&gt;&gt;&gt;&gt;&gt;&gt;
+INFO     py38:base_case.py:118 用例【密码7位】状态码断言成功！
+INFO     py38:base_case.py:140 用例【密码7位】请求json结果断言成功！
+INFO     py38:base_case.py:53 用例【密码7位】测试结束&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;<br/></div></td></tr></tbody>
+      <tbody class="passed results-table-row">
+        <tr>
+          <td class="col-result">Passed</td>
+          <td class="col-name">test_cases/test_register.py::TestRegister::test_register_10</td>
+          <td class="col-duration">0.04</td>
+          <td class="col-links"></td></tr>
+        <tr>
+          <td class="extra" colspan="4">
+            <div class="log"> ------------------------------Captured stderr call------------------------------ <br/>INFO 2021-04-28 20:09:18,310 [base_case.py--&gt;line:39]:用例【密码17位】开始测试&gt;&gt;&gt;&gt;&gt;&gt;&gt;
+INFO 2021-04-28 20:09:18,348 [base_case.py--&gt;line:118]:用例【密码17位】状态码断言成功！
+INFO 2021-04-28 20:09:18,348 [base_case.py--&gt;line:140]:用例【密码17位】请求json结果断言成功！
+INFO 2021-04-28 20:09:18,348 [base_case.py--&gt;line:53]:用例【密码17位】测试结束&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;
+<br/> -------------------------------Captured log call-------------------------------- <br/>INFO     py38:base_case.py:39 用例【密码17位】开始测试&gt;&gt;&gt;&gt;&gt;&gt;&gt;
+INFO     py38:base_case.py:118 用例【密码17位】状态码断言成功！
+INFO     py38:base_case.py:140 用例【密码17位】请求json结果断言成功！
+INFO     py38:base_case.py:53 用例【密码17位】测试结束&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;<br/></div></td></tr></tbody>
+      <tbody class="passed results-table-row">
+        <tr>
+          <td class="col-result">Passed</td>
+          <td class="col-name">test_cases/test_register.py::TestRegister::test_register_11</td>
+          <td class="col-duration">0.03</td>
+          <td class="col-links"></td></tr>
+        <tr>
+          <td class="extra" colspan="4">
+            <div class="log"> ------------------------------Captured stderr call------------------------------ <br/>INFO 2021-04-28 20:09:18,350 [base_case.py--&gt;line:39]:用例【不输入密码】开始测试&gt;&gt;&gt;&gt;&gt;&gt;&gt;
+INFO 2021-04-28 20:09:18,381 [base_case.py--&gt;line:118]:用例【不输入密码】状态码断言成功！
+INFO 2021-04-28 20:09:18,381 [base_case.py--&gt;line:140]:用例【不输入密码】请求json结果断言成功！
+INFO 2021-04-28 20:09:18,381 [base_case.py--&gt;line:53]:用例【不输入密码】测试结束&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;
+<br/> -------------------------------Captured log call-------------------------------- <br/>INFO     py38:base_case.py:39 用例【不输入密码】开始测试&gt;&gt;&gt;&gt;&gt;&gt;&gt;
+INFO     py38:base_case.py:118 用例【不输入密码】状态码断言成功！
+INFO     py38:base_case.py:140 用例【不输入密码】请求json结果断言成功！
+INFO     py38:base_case.py:53 用例【不输入密码】测试结束&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;<br/></div></td></tr></tbody>
+      <tbody class="passed results-table-row">
+        <tr>
+          <td class="col-result">Passed</td>
+          <td class="col-name">test_cases/test_register.py::TestRegister::test_register_12</td>
+          <td class="col-duration">0.02</td>
+          <td class="col-links"></td></tr>
+        <tr>
+          <td class="extra" colspan="4">
+            <div class="log"> ------------------------------Captured stderr call------------------------------ <br/>INFO 2021-04-28 20:09:18,383 [base_case.py--&gt;line:39]:用例【昵称11位】开始测试&gt;&gt;&gt;&gt;&gt;&gt;&gt;
+INFO 2021-04-28 20:09:18,411 [base_case.py--&gt;line:118]:用例【昵称11位】状态码断言成功！
+INFO 2021-04-28 20:09:18,411 [base_case.py--&gt;line:140]:用例【昵称11位】请求json结果断言成功！
+INFO 2021-04-28 20:09:18,411 [base_case.py--&gt;line:53]:用例【昵称11位】测试结束&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;
+<br/> -------------------------------Captured log call-------------------------------- <br/>INFO     py38:base_case.py:39 用例【昵称11位】开始测试&gt;&gt;&gt;&gt;&gt;&gt;&gt;
+INFO     py38:base_case.py:118 用例【昵称11位】状态码断言成功！
+INFO     py38:base_case.py:140 用例【昵称11位】请求json结果断言成功！
+INFO     py38:base_case.py:53 用例【昵称11位】测试结束&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;<br/></div></td></tr></tbody>
+      <tbody class="passed results-table-row">
+        <tr>
+          <td class="col-result">Passed</td>
+          <td class="col-name">test_cases/test_register.py::TestRegister::test_register_13</td>
+          <td class="col-duration">0.03</td>
+          <td class="col-links"></td></tr>
+        <tr>
+          <td class="extra" colspan="4">
+            <div class="log"> ------------------------------Captured stderr call------------------------------ <br/>INFO 2021-04-28 20:09:18,414 [base_case.py--&gt;line:39]:用例【类型输入非0，1内容】开始测试&gt;&gt;&gt;&gt;&gt;&gt;&gt;
+INFO 2021-04-28 20:09:18,443 [base_case.py--&gt;line:118]:用例【类型输入非0，1内容】状态码断言成功！
+INFO 2021-04-28 20:09:18,443 [base_case.py--&gt;line:140]:用例【类型输入非0，1内容】请求json结果断言成功！
+INFO 2021-04-28 20:09:18,443 [base_case.py--&gt;line:53]:用例【类型输入非0，1内容】测试结束&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;
+<br/> -------------------------------Captured log call-------------------------------- <br/>INFO     py38:base_case.py:39 用例【类型输入非0，1内容】开始测试&gt;&gt;&gt;&gt;&gt;&gt;&gt;
+INFO     py38:base_case.py:118 用例【类型输入非0，1内容】状态码断言成功！
+INFO     py38:base_case.py:140 用例【类型输入非0，1内容】请求json结果断言成功！
+INFO     py38:base_case.py:53 用例【类型输入非0，1内容】测试结束&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;<br/> ----------------------------Captured stderr teardown---------------------------- <br/>INFO 2021-04-28 20:09:18,444 [base_case.py--&gt;line:35]:**********注册接口测试结束**********
+<br/> -----------------------------Captured log teardown------------------------------ <br/>INFO     py38:base_case.py:35 **********注册接口测试结束**********<br/></div></td></tr></tbody></table></body></html>
